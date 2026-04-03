@@ -2,29 +2,32 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const axios = require('axios');
-const FormData = require('form-data');
 const fs = require('fs');
 const cors = require('cors');
 const path = require('path');
-const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-
 const ffmpegStatic = require('ffmpeg-static');
 
+// ── FFmpeg ──
 let FFMPEG_PATH = ffmpegStatic;
 try {
   const r = spawnSync('which', ['ffmpeg'], { encoding: 'utf8' });
-  if (r.stdout && r.stdout.trim()) { FFMPEG_PATH = r.stdout.trim(); console.log('Using system ffmpeg:', FFMPEG_PATH); }
+  if (r.stdout && r.stdout.trim()) {
+    FFMPEG_PATH = r.stdout.trim();
+    console.log('Using system ffmpeg:', FFMPEG_PATH);
+  }
 } catch(e) {}
 
 function runFFmpeg(args, timeout = 180000) {
   const result = spawnSync(FFMPEG_PATH, args, { timeout, maxBuffer: 100 * 1024 * 1024 });
-  if (result.status !== 0) throw new Error('FFmpeg failed');
+  if (result.status !== 0) throw new Error('FFmpeg failed: ' + (result.stderr || '').toString().slice(0, 200));
 }
 
+// ── App ──
 const app = express();
-app.use((req, res, next) => { req.setTimeout(0); res.setTimeout(0); next(); });
 const PORT = process.env.PORT || 3000;
+
+app.use((req, res, next) => { req.setTimeout(0); res.setTimeout(0); next(); });
 app.use(cors());
 app.use(express.static(__dirname));
 app.use(express.json());
@@ -32,13 +35,11 @@ app.use('/outputs', express.static('outputs'));
 
 const upload = multer({ dest: 'uploads/', limits: { fileSize: 500 * 1024 * 1024 } });
 
-if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
-if (!fs.existsSync('outputs')) fs.mkdirSync('outputs');
-if (!fs.existsSync('cache')) fs.mkdirSync('cache');
+['uploads', 'outputs', 'cache'].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// ── Queue ──
+// ── Job queue ──
 const queue = [];
 let activeJobs = 0;
 const MAX_CONCURRENT = 8;
@@ -54,7 +55,9 @@ async function processQueue() {
   if (activeJobs >= MAX_CONCURRENT || queue.length === 0) return;
   activeJobs++;
   const { job, resolve, reject } = queue.shift();
-  try { resolve(await job()); } catch(e) { reject(e); } finally { activeJobs--; processQueue(); }
+  try { resolve(await job()); }
+  catch(e) { reject(e); }
+  finally { activeJobs--; processQueue(); }
 }
 
 app.get('/queue', (req, res) => {
@@ -62,83 +65,153 @@ app.get('/queue', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// AI VIDEO GEN — /generate-video
-// Supports: Veo3 Fast, Grok, Sora 2, Kling 2.6, Seedance
+// MODELSLAB HELPER
+// ══════════════════════════════════════════════════════════════════════════════
+async function modelsLabPoll(fetchUrl, apiKey, maxAttempts = 120, intervalMs = 5000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, intervalMs));
+    const pollRes = await axios.post(fetchUrl, { key: apiKey }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000,
+    });
+    const d = pollRes.data;
+    console.log(`[modelslab] poll ${i + 1} status=${d.status}`);
+    if (d.status === 'success' && d.output?.[0]) return d.output[0];
+    if (d.status === 'failed' || d.status === 'error') {
+      throw new Error('ModelsLab generation failed: ' + (d.message || JSON.stringify(d).slice(0, 200)));
+    }
+  }
+  throw new Error('ModelsLab generation timed out after 10 minutes');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// KIE.AI HELPER
+// ══════════════════════════════════════════════════════════════════════════════
+async function kieAiPoll(taskId, apiKey, maxAttempts = 120, intervalMs = 5000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, intervalMs));
+    const pollRes = await axios.get('https://api.kie.ai/api/v1/jobs/recordInfo', {
+      params: { taskId },
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+      timeout: 15000,
+    });
+    const taskData = pollRes.data?.data || pollRes.data;
+    const state = taskData?.state;
+    console.log(`[kie.ai] poll ${i + 1} taskId=${taskId} state=${state}`);
+    if (state === 'success') {
+      console.log('[kie.ai] resultJson:', taskData.resultJson);
+      let url = null;
+      try { const rj = JSON.parse(taskData.resultJson); url = rj?.resultUrls?.[0] || rj?.result_urls?.[0]; } catch(e) {}
+      if (!url) url = taskData?.video_url || taskData?.audio_url || taskData?.output?.video_url || taskData?.output?.audio_url;
+      if (!url) throw new Error('Kie.ai success but no URL found. resultJson: ' + taskData.resultJson);
+      return url;
+    }
+    if (state === 'failed' || state === 'error' || state === 'fail') {
+      throw new Error('Kie.ai task failed. resultJson: ' + taskData.resultJson);
+    }
+  }
+  throw new Error('Kie.ai task timed out after 10 minutes');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// AI VIDEO GEN  —  POST /generate-video
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/generate-video', upload.single('image'), async (req, res) => {
   const imagePath = req.file ? path.resolve(req.file.path) : null;
   const timestamp = Date.now();
+  const {
+    model = 'veo3-lite',
+    prompt = '',
+    duration = '8',
+    aspectRatio = '9:16',
+    quality = '720p',
+  } = req.body;
 
-  const model = req.body.model || 'veo3-fast';
-  const prompt = req.body.prompt || '';
-  const duration = req.body.duration || '8';
-  const aspectRatio = req.body.aspectRatio || '9:16';
-
-  const KIE_API_KEY = process.env.KIE_API_KEY;
-  if (!KIE_API_KEY) {
-    if (imagePath) try { fs.unlinkSync(imagePath); } catch(e) {}
-    return res.json({ success: false, error: 'KIE_API_KEY not configured' });
-  }
-
-  const MODEL_MAP = {
-    'veo3-fast': { model: 'veo3-fast', resolution: '720p' },
-    'grok': { model: 'grok-imagine', resolution: '720p' },
-    'sora2': { model: 'sora2', resolution: '720p' },
-    'kling26': { model: 'kling/v2.6', resolution: '720p' },
-    'seedance': { model: 'seedance', resolution: '720p' },
-  };
-
-  const modelCfg = MODEL_MAP[model] || MODEL_MAP['veo3-fast'];
+  const ML_KEY = process.env.MODELSLAB_API_KEY;
+  const KIE_KEY = process.env.KIE_API_KEY;
 
   try {
     const result = await enqueue(async () => {
-      console.log(`[generate-video] model=${model} duration=${duration}s aspect=${aspectRatio}`);
+      console.log(`[generate-video] model=${model} duration=${duration}s aspect=${aspectRatio} quality=${quality} hasImage=${!!imagePath}`);
 
-      const body = {
-        model: modelCfg.model,
-        prompt: prompt || 'Cinematic motion',
-        duration: parseInt(duration),
-        resolution: modelCfg.resolution,
-        aspect_ratio: aspectRatio,
-      };
+      let videoUrl;
 
-      if (imagePath && fs.existsSync(imagePath)) {
-        const imgBuffer = fs.readFileSync(imagePath);
-        body.image = imgBuffer.toString('base64');
-        body.image_mime_type = req.file.mimetype || 'image/jpeg';
-      }
+      // ── GROK via Kie.ai ──
+      if (model === 'grok') {
+        if (!KIE_KEY) throw new Error('KIE_API_KEY not configured in .env');
 
-      const submitRes = await axios.post('https://api.kie.ai/v1/video/generate', body, {
-        headers: {
-          'Authorization': `Bearer ${KIE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 60000,
-      });
-
-      const taskId = submitRes.data?.data?.task_id || submitRes.data?.task_id;
-      if (!taskId) throw new Error('No task_id returned');
-
-      const maxPolls = 120;
-      let videoUrl = null;
-      for (let i = 0; i < maxPolls; i++) {
-        await new Promise(r => setTimeout(r, 5000));
-        const pollRes = await axios.get(`https://api.kie.ai/v1/video/task/${taskId}`, {
-          headers: { 'Authorization': `Bearer ${KIE_API_KEY}` },
-          timeout: 15000,
+        const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', {
+          model: 'grok-imagine/text-to-video',
+          input: {
+            prompt: prompt || 'Cinematic motion',
+            aspect_ratio: aspectRatio,
+            duration: parseInt(duration),
+            resolution: quality,
+          },
+        }, {
+          headers: { 'Authorization': `Bearer ${KIE_KEY}`, 'Content-Type': 'application/json' },
+          timeout: 60000,
         });
-        const taskData = pollRes.data?.data || pollRes.data;
-        if (taskData?.status === 'completed' || taskData?.status === 'success') {
-          videoUrl = taskData?.video_url || taskData?.output?.video_url;
-          break;
+
+        const taskId = submitRes.data?.data?.taskId || submitRes.data?.data?.task_id;
+        if (!taskId) throw new Error('No taskId from Kie.ai: ' + JSON.stringify(submitRes.data).slice(0, 200));
+        console.log(`[generate-video] Grok taskId=${taskId}`);
+        videoUrl = await kieAiPoll(taskId, KIE_KEY);
+
+      // ── Veo 3.1 Lite / Sora 2 via ModelsLab ──
+      } else {
+        if (!ML_KEY) throw new Error('MODELSLAB_API_KEY not configured in .env');
+
+        const modelIdMap = {
+          'veo3-lite': 'veo-3.1-lite-t2v',
+          'veo3lite':  'veo-3.1-lite-t2v',
+          'sora2':     'sora-2',
+        };
+        const modelId = modelIdMap[model] || 'veo-3.1-lite-t2v';
+
+        // Sora 2 requires pixel dimensions, not ratio strings
+        const soraAspectMap = { '9:16': '720x1280', '16:9': '1280x720' };
+        const soraAspect = model === 'sora2' ? (soraAspectMap[aspectRatio] || '720x1280') : aspectRatio;
+
+        const body = {
+          key: ML_KEY,
+          model_id: modelId,
+          prompt: prompt || 'Cinematic motion',
+          aspect_ratio: soraAspect,
+          duration: String(parseInt(duration)),
+          enhance_prompt: true,
+          negative_prompt: null,
+          webhook: null,
+          track_id: null,
+        };
+
+        // Audio only supported by Veo 3.1 Lite
+        if (model === 'veo3-lite' || model === 'veo3lite') {
+          body.generate_audio = true;
         }
-        if (taskData?.status === 'failed') throw new Error('Generation failed');
+
+        // Veo 3.1 Lite supports optional reference image
+        if (imagePath && fs.existsSync(imagePath) && (model === 'veo3-lite' || model === 'veo3lite')) {
+          const mimeType = req.file.mimetype || 'image/jpeg';
+          body.init_image = `data:${mimeType};base64,${fs.readFileSync(imagePath).toString('base64')}`;
+        }
+
+        const submitRes = await axios.post(
+          'https://modelslab.com/api/v7/video-fusion/text-to-video',
+          body,
+          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+        );
+
+        const d = submitRes.data;
+        console.log(`[generate-video] ${model} submit status=${d.status} id=${d.id}`);
+        if (d.status === 'success' && d.output?.[0]) videoUrl = d.output[0];
+        else if (d.status === 'processing' && d.fetch_result) videoUrl = await modelsLabPoll(d.fetch_result, ML_KEY);
+        else throw new Error('Unexpected ModelsLab response: ' + JSON.stringify(d).slice(0, 300));
       }
 
-      if (!videoUrl) throw new Error('Generation timed out');
-
+      // ── Download and save ──
       const outputPath = path.resolve(`outputs/gen_${timestamp}.mp4`);
-      const dlRes = await axios.get(videoUrl, { responseType: 'arraybuffer', timeout: 120000 });
+      const dlRes = await axios.get(videoUrl, { responseType: 'arraybuffer', timeout: 300000 });
       fs.writeFileSync(outputPath, Buffer.from(dlRes.data));
 
       if (imagePath) try { fs.unlinkSync(imagePath); } catch(e) {}
@@ -156,27 +229,63 @@ app.post('/generate-video', upload.single('image'), async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// AI IMAGE GEN — /generate-image
-// Supports: Nano Banana 2/Pro, Seedream 4.5/5.0
+// AI IMAGE GEN  —  POST /generate-image  (Kie.ai)
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/generate-image', upload.single('refImage'), async (req, res) => {
   const refImagePath = req.file ? path.resolve(req.file.path) : null;
-  const { model, prompt, aspectRatio } = req.body;
+  const timestamp = Date.now();
+  const { model = 'nano-banana-pro', prompt = '', aspectRatio = '9:16', resolution = '1K', format = 'JPG' } = req.body;
 
-  console.log(`[generate-image] model=${model} aspect=${aspectRatio}`);
+  const KIE_API_KEY = process.env.KIE_API_KEY;
+  if (!KIE_API_KEY) {
+    if (refImagePath) try { fs.unlinkSync(refImagePath); } catch(e) {}
+    return res.json({ success: false, error: 'KIE_API_KEY not configured in .env' });
+  }
+
+  const KIE_MODEL_MAP = {
+    'nano-banana-pro': 'nano-banana-pro',
+    'nano-banana-2':   'nano-banana-2',
+  };
+  const kieModel = KIE_MODEL_MAP[model] || 'nano-banana-pro';
+  const RESOLUTION_MAP = { 'Basic': '1K', 'Standard': '2K', 'High': '4K', '1K': '1K', '2K': '2K', '4K': '4K' };
+  const kieResolution = RESOLUTION_MAP[resolution] || '1K';
 
   try {
-    await enqueue(async () => {
-      // Placeholder - integrate with Kie.ai image API
-      const outputPath = path.resolve(`outputs/img_${Date.now()}.png`);
-      // Create placeholder
-      fs.writeFileSync(outputPath, Buffer.from(''));
+    const result = await enqueue(async () => {
+      console.log(`[generate-image] model=${kieModel} aspect=${aspectRatio} res=${kieResolution} hasRef=${!!refImagePath}`);
+
+      const body = {
+        model: kieModel,
+        input: { prompt, aspect_ratio: aspectRatio, resolution: kieResolution, output_format: 'png' },
+      };
+      if (refImagePath && fs.existsSync(refImagePath)) {
+        body.input.image_input = fs.readFileSync(refImagePath).toString('base64');
+        body.input.image_mime_type = req.file.mimetype || 'image/jpeg';
+      }
+
+      const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', body, {
+        headers: { 'Authorization': `Bearer ${KIE_API_KEY}`, 'Content-Type': 'application/json' },
+        timeout: 60000,
+      });
+
+      const taskId = submitRes.data?.data?.taskId || submitRes.data?.data?.task_id;
+      if (!taskId) throw new Error('No taskId: ' + JSON.stringify(submitRes.data));
+      console.log(`[generate-image] taskId=${taskId}`);
+
+      const imageUrl = await kieAiPoll(taskId, KIE_API_KEY);
+
+      const ext = format === 'PNG' ? 'png' : 'jpg';
+      const outputPath = path.resolve(`outputs/img_${timestamp}.${ext}`);
+      const dlRes = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 60000 });
+      fs.writeFileSync(outputPath, Buffer.from(dlRes.data));
 
       if (refImagePath) try { fs.unlinkSync(refImagePath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
+
+      return { success: true, imageUrl: `/outputs/img_${timestamp}.${ext}` };
     });
 
-    res.json({ success: true, imageUrl: `/outputs/img_${Date.now()}.png` });
+    res.json(result);
   } catch(err) {
     console.error('[generate-image] error:', err.message);
     if (refImagePath) try { fs.unlinkSync(refImagePath); } catch(e) {}
@@ -185,150 +294,178 @@ app.post('/generate-image', upload.single('refImage'), async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// VOICE GEN — /generate-voice
-// Uses Puter.js frontend, server just logs
+// VOICE GEN  —  POST /generate-voice
+//
+//  Clone mode  (voiceSample file attached) → Chatterbox on Modal
+//  Preset mode (no file)                   → Kie.ai ElevenLabs
 // ══════════════════════════════════════════════════════════════════════════════
-app.post('/generate-voice', async (req, res) => {
-  const { script, voiceId, settings } = req.body;
+app.post('/generate-voice', upload.single('voiceSample'), async (req, res) => {
+  const voiceSamplePath = req.file ? path.resolve(req.file.path) : null;
+  const timestamp = Date.now();
+  const {
+    text = '',
+    voiceId,
+    model: kieModel = 'elevenlabs/text-to-speech-turbo-2-5',
+    speed = '1.0',
+    stability = '0.5',
+    similarity = '0.75',
+    exaggeration = '0.5',
+    cfgWeight = '0.5',
+    temperature = '0.8',
+  } = req.body;
 
-  console.log(`[generate-voice] voiceId=${voiceId} scriptLen=${script?.length || 0}`);
+  if (!text.trim()) {
+    if (voiceSamplePath) try { fs.unlinkSync(voiceSamplePath); } catch(e) {}
+    return res.json({ success: false, error: 'No text provided' });
+  }
 
-  res.json({
-    success: true,
-    message: 'Voice generation handled by Puter.js (frontend)',
-    note: 'Unlimited free ElevenLabs access via Puter.js',
-  });
+  const isCloneMode = !!voiceSamplePath;
+
+  try {
+    const result = await enqueue(async () => {
+
+      if (isCloneMode) {
+        // ── Chatterbox voice cloning via Modal ──
+        const CHATTERBOX_URL = process.env.CHATTERBOX_MODAL_URL;
+        if (!CHATTERBOX_URL) throw new Error('CHATTERBOX_MODAL_URL not set — run: modal deploy modal_chatterbox.py');
+
+        console.log(`[generate-voice] CLONE mode chars=${text.length} file=${voiceSamplePath}`);
+
+        let audioB64;
+        try {
+          audioB64 = fs.readFileSync(voiceSamplePath).toString('base64');
+        } catch(e) {
+          throw new Error('Failed to read voice sample file: ' + e.message);
+        }
+
+        let response;
+        try {
+          response = await axios.post(CHATTERBOX_URL, {
+            text: text.trim(),
+            exaggeration: parseFloat(exaggeration),
+            cfg_weight: parseFloat(cfgWeight),
+            temperature: parseFloat(temperature),
+            audio_prompt_b64: audioB64,
+          }, { headers: { 'Content-Type': 'application/json' }, timeout: 300000 });
+        } catch(e) {
+          throw new Error('Chatterbox request failed: ' + e.message + (e.response ? ' — ' + JSON.stringify(e.response.data).slice(0, 200) : ''));
+        }
+
+        console.log('[chatterbox] response keys:', Object.keys(response.data));
+        console.log('[chatterbox] success:', response.data.success, 'has audio:', !!response.data.audio_b64);
+
+        if (!response.data.audio_b64) {
+          throw new Error('Chatterbox returned no audio. Response: ' + JSON.stringify(response.data).slice(0, 300));
+        }
+
+        const outputPath = path.resolve(`outputs/voice_${timestamp}.wav`);
+        fs.writeFileSync(outputPath, Buffer.from(response.data.audio_b64, 'base64'));
+        try { fs.unlinkSync(voiceSamplePath); } catch(e) {}
+        setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
+
+        return { success: true, audioUrl: `/outputs/voice_${timestamp}.wav` };
+
+      } else {
+        // ── Kie.ai ElevenLabs preset ──
+        const KIE_API_KEY = process.env.KIE_API_KEY;
+        if (!KIE_API_KEY) throw new Error('KIE_API_KEY not set in .env');
+        if (!voiceId) throw new Error('No voiceId provided');
+
+        console.log(`[generate-voice] PRESET mode model=${kieModel} voiceId=${voiceId} chars=${text.length}`);
+
+        const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', {
+          model: kieModel,
+          input: {
+            text: text.trim(),
+            voice: voiceId,
+            stability: parseFloat(stability),
+            similarity_boost: parseFloat(similarity),
+            speed: parseFloat(speed),
+            style: 0,
+          },
+        }, {
+          headers: { 'Authorization': `Bearer ${KIE_API_KEY}`, 'Content-Type': 'application/json' },
+          timeout: 30000,
+        });
+
+        const taskId = submitRes.data?.data?.taskId || submitRes.data?.data?.task_id;
+        if (!taskId) throw new Error('No taskId from Kie.ai: ' + JSON.stringify(submitRes.data));
+        console.log(`[generate-voice] Kie taskId=${taskId}`);
+
+        const audioUrl = await kieAiPoll(taskId, KIE_API_KEY);
+
+        const outputPath = path.resolve(`outputs/voice_${timestamp}.mp3`);
+        const dlRes = await axios.get(audioUrl, { responseType: 'arraybuffer', timeout: 60000 });
+        fs.writeFileSync(outputPath, Buffer.from(dlRes.data));
+        setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
+
+        return { success: true, audioUrl: `/outputs/voice_${timestamp}.mp3` };
+      }
+    });
+
+    res.json(result);
+  } catch(err) {
+    console.error('[generate-voice] error:', err.message);
+    if (voiceSamplePath) try { fs.unlinkSync(voiceSamplePath); } catch(e) {}
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// VIDEO UPSCALER — /upscale-video
+// VIDEO UPSCALER  —  POST /upscale-video
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/upscale-video', upload.single('video'), async (req, res) => {
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
   const { quality } = req.body;
-
-  console.log(`[upscale-video] quality=${quality}`);
-
   try {
     await enqueue(async () => {
       const outputPath = path.resolve(`outputs/upscaled_${timestamp}.mp4`);
-      
       const resMap = { '1080': '1920:-1', '2k': '2560:-1', '4k': '3840:-1' };
-      const resolution = resMap[quality] || '1920:-1';
-
-      runFFmpeg([
-        '-y', '-i', videoPath,
-        '-vf', `scale=${resolution}`,
-        '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
-        '-c:a', 'aac',
-        outputPath,
-      ], 300000);
-
+      runFFmpeg(['-y', '-i', videoPath, '-vf', `scale=${resMap[quality] || '1920:-1'}`, '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-c:a', 'aac', outputPath], 300000);
       try { fs.unlinkSync(videoPath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
     });
-
     res.json({ success: true, videoUrl: `/outputs/upscaled_${timestamp}.mp4` });
   } catch(err) {
-    console.error('[upscale-video] error:', err.message);
     try { fs.unlinkSync(videoPath); } catch(e) {}
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DEAD SPACE REMOVER — /remove-deadspace
+// DEAD SPACE REMOVER  —  POST /remove-deadspace
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
-  const { dbThreshold } = req.body;
-
-  console.log(`[remove-deadspace] threshold=${dbThreshold}dB`);
-
+  const { dbThreshold = '-40' } = req.body;
   try {
     await enqueue(async () => {
       const outputPath = path.resolve(`outputs/trimmed_${timestamp}.mp4`);
-      
-      runFFmpeg([
-        '-y', '-i', videoPath,
-        '-af', `silenceremove=1:0:0.1:${dbThreshold}dB:1:0.1:${dbThreshold}dB`,
-        '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
-        '-c:a', 'aac',
-        outputPath,
-      ], 300000);
-
+      runFFmpeg(['-y', '-i', videoPath, '-af', `silenceremove=1:0:0.1:${dbThreshold}dB:1:0.1:${dbThreshold}dB`, '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-c:a', 'aac', outputPath], 300000);
       try { fs.unlinkSync(videoPath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
     });
-
     res.json({ success: true, videoUrl: `/outputs/trimmed_${timestamp}.mp4` });
   } catch(err) {
-    console.error('[remove-deadspace] error:', err.message);
     try { fs.unlinkSync(videoPath); } catch(e) {}
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// YT SCRAPER — /scrape-channel
-// Uses YouTube Data API v3 to extract video data
+// YT SCRAPER / REPURPOSE — stubs
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/scrape-channel', async (req, res) => {
-  const { channelUrl, videoCount, contentType } = req.body;
-
-  console.log(`[scrape-channel] url=${channelUrl} count=${videoCount} type=${contentType}`);
-
   const YT_API_KEY = process.env.YOUTUBE_API_KEY;
-  if (!YT_API_KEY) {
-    return res.json({
-      success: false,
-      error: 'YOUTUBE_API_KEY not configured',
-      data: []
-    });
-  }
-
-  try {
-    // Extract channel ID from URL
-    const channelMatch = channelUrl.match(/@([a-zA-Z0-9_-]+)/) || channelUrl.match(/channel\/([a-zA-Z0-9_-]+)/);
-    if (!channelMatch) {
-      return res.json({ success: false, error: 'Invalid channel URL', data: [] });
-    }
-
-    // Placeholder response - in production integrate with youtube-api-nodejs
-    const mockData = {
-      success: true,
-      videos: [
-        { title: 'Video 1', views: 1000, date: '2024-01-01', engagement: '5.2%' },
-        { title: 'Video 2', views: 2500, date: '2024-01-05', engagement: '7.8%' },
-      ]
-    };
-
-    res.json(mockData);
-  } catch(err) {
-    console.error('[scrape-channel] error:', err.message);
-    res.status(500).json({ success: false, error: err.message, data: [] });
-  }
+  if (!YT_API_KEY) return res.json({ success: false, error: 'YOUTUBE_API_KEY not configured', data: [] });
+  res.json({ success: true, videos: [{ title: 'Video 1', views: 1000, date: '2024-01-01', engagement: '5.2%' }] });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// REPURPOSE — /enable-repurpose
-// Monitors YT channel and auto-reposts to platforms
-// ══════════════════════════════════════════════════════════════════════════════
 app.post('/enable-repurpose', async (req, res) => {
   const { ytChannel, platforms } = req.body;
-
-  console.log(`[enable-repurpose] yt=${ytChannel} platforms=${platforms.join(',')}`);
-
-  // Placeholder - in production this would set up webhooks/polling
-  res.json({
-    success: true,
-    status: 'active',
-    monitoring: ytChannel,
-    platforms: platforms,
-    note: 'Auto-repurposing monitoring enabled'
-  });
+  res.json({ success: true, status: 'active', monitoring: ytChannel, platforms });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -336,12 +473,14 @@ app.post('/enable-repurpose', async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 app.listen(PORT, () => {
   console.log('\n✅ DubShorts v3 running at http://localhost:' + PORT);
-  console.log('   KIE_API_KEY:', process.env.KIE_API_KEY ? '✓ set' : '✗ not set');
-  console.log('   YOUTUBE_API_KEY:', process.env.YOUTUBE_API_KEY ? '✓ set' : '✗ not set');
-  console.log('   Credits-based system · Puter.js Voice Gen\n');
+  console.log('   MODELSLAB_API_KEY :', process.env.MODELSLAB_API_KEY   ? '✓ set' : '✗ not set');
+  console.log('   KIE_API_KEY       :', process.env.KIE_API_KEY         ? '✓ set' : '✗ not set');
+  console.log('   CHATTERBOX_URL    :', process.env.CHATTERBOX_MODAL_URL ? '✓ set' : '✗ not set (voice cloning disabled)');
+  console.log('   YOUTUBE_API_KEY   :', process.env.YOUTUBE_API_KEY     ? '✓ set' : '✗ not set');
+  console.log('');
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
   if (err.code === 'EPIPE') return;
   console.error('Uncaught exception:', err.message);
 });
