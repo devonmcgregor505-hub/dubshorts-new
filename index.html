@@ -441,10 +441,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
         <div class="card">
           <div class="card-hd">Settings</div>
           <div class="card-body">
-            <div class="slider-row">
-              <div class="setting-label">Silence Threshold (dB)</div>
-              <div class="slider-labels"><span>Sensitive</span><span id="dbVal">-40</span><span>Aggressive</span></div>
-              <input type="range" class="slider" id="dbSlider" min="-60" max="-10" value="-40" oninput="updateDbVal()">
+            <div class="setting-row">
+              <label class="setting-label">Intensity</label>
+              <select class="select" id="dsIntensity">
+                <option value="light">🟢 Light — removes long silences</option>
+                <option value="medium" selected>🟡 Medium — balanced removal</option>
+                <option value="aggressive">🔴 Aggressive — removes all pauses</option>
+              </select>
             </div>
             <div class="setting-row">
               <label class="setting-label">Cost</label>
@@ -453,6 +456,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
           </div>
         </div>
         <button class="btn" id="dsBtn" onclick="startDeadspace()" disabled>🎬 Remove Dead Space</button>
+        <div class="prog-wrap" id="dsProg">
+          <div class="prog-lbl"><span id="dsProgLbl">Processing...</span><span id="dsProgPct">0%</span></div>
+          <div class="prog-track"><div class="prog-fill" id="dsFill"></div></div>
+        </div>
+        <div class="err-box" id="dsErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="dsErrMsg"></div></div>
       </div>
       <div class="right-panel">
         <div class="phone-wrap">
