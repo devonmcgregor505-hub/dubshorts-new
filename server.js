@@ -470,19 +470,56 @@ app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
   const { intensity = 'medium' } = req.body;
-  const intensityMap = { light: '-50', medium: '-40', aggressive: '-30' };
-  const db = intensityMap[intensity] || '-40';
+  const intensityMap = {
+    light:      { db: '-50', minDuration: '0.8' },
+    medium:     { db: '-40', minDuration: '0.5' },
+    aggressive: { db: '-30', minDuration: '0.3' },
+  };
+  const cfg = intensityMap[intensity] || intensityMap.medium;
   try {
     const result = await enqueue(async () => {
       const outputPath = path.resolve(`outputs/trimmed_${timestamp}.mp4`);
-      // Use afade for smooth cuts, silenceremove on audio stream only, copy video
-      runFFmpeg([
-        '-y', '-i', videoPath,
-        '-af', `silenceremove=start_periods=1:start_duration=0.1:start_threshold=${db}dB:detection=peak,aformat=dblp,areverse,silenceremove=start_periods=1:start_duration=0.1:start_threshold=${db}dB:detection=peak,aformat=dblp,areverse`,
-        '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
-        '-c:a', 'aac',
-        outputPath
-      ], 300000);
+      const detect = spawnSync(FFMPEG_PATH, [
+        '-i', videoPath,
+        '-af', `silencedetect=noise=${cfg.db}dB:d=${cfg.minDuration}`,
+        '-f', 'null', '-'
+      ], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+      const stderr = detect.stderr || '';
+      const silenceStarts = [];
+      const silenceEnds = [];
+      for (const line of stderr.split('
+')) {
+        const s = line.match(/silence_start:\s*([\d.]+)/);
+        const e = line.match(/silence_end:\s*([\d.]+)/);
+        if (s) silenceStarts.push(parseFloat(s[1]));
+        if (e) silenceEnds.push(parseFloat(e[1]));
+      }
+      const durResult = spawnSync(FFMPEG_PATH, ['-i', videoPath, '-f', 'null', '-'], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+      const durMatch = (durResult.stderr || '').match(/Duration:\s*([\d:]+)/);
+      let totalDuration = 9999;
+      if (durMatch) {
+        const parts = durMatch[1].split(':').map(Number);
+        totalDuration = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      }
+      const keeps = [];
+      let cursor = 0;
+      for (let i = 0; i < silenceStarts.length; i++) {
+        if (silenceStarts[i] > cursor + 0.05) keeps.push([cursor, silenceStarts[i]]);
+        cursor = silenceEnds[i] || cursor;
+      }
+      if (cursor < totalDuration - 0.05) keeps.push([cursor, totalDuration]);
+      if (keeps.length === 0) {
+        runFFmpeg(['-y', '-i', videoPath, '-c', 'copy', outputPath], 60000);
+      } else {
+        const vSelect = keeps.map(([s, e]) => `between(t,${s},${e})`).join('+');
+        runFFmpeg([
+          '-y', '-i', videoPath,
+          '-vf', `select='${vSelect}',setpts=N/FRAME_RATE/TB`,
+          '-af', `aselect='${vSelect}',asetpts=N/SR/TB`,
+          '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
+          '-c:a', 'aac', outputPath
+        ], 300000);
+      }
       try { fs.unlinkSync(videoPath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
       return { success: true, videoUrl: `/outputs/trimmed_${timestamp}.mp4` };
@@ -494,8 +531,6 @@ app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-// ══════════════════════════════════════════════════════════════════════════════
 // YT SCRAPER / REPURPOSE — stubs
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/scrape-channel', async (req, res) => {
