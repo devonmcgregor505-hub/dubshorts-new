@@ -582,7 +582,7 @@ app.post('/scrape-channel', async (req, res) => {
             .replace(/<[^>]+>/g, "")
             .split("\n").map(l => l.trim()).filter(l => l && !/^[\d:.,\s]+$/.test(l));
           const seen = new Set();
-          transcript = vttLines.filter(l => { if (seen.has(l)) return false; seen.add(l); return true; }).join("\n");
+          transcript = vttLines.filter(l => { if (seen.has(l)) return false; seen.add(l); return true; }).join("\n").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
         }
         videos.push({
           video_id: id, url, title: meta.title || '',
