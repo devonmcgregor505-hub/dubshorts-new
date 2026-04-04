@@ -403,7 +403,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
             <div class="setting-row">
               <label class="setting-label">Target Quality</label>
-              <select class="select" id="upscaleQuality" onchange="updateUpscaleCost()">
+              <select class="select" id="upscaleQuality">
+                <option value="1080">1080p</option>
+                <option value="2k">2K</option>
+                <option value="4k">4K</option>
+              </select>
             </div>
           </div>
         </div>
