@@ -539,7 +539,6 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
   try {
     const args = [
       '--flat-playlist',
-      '--match-filter', 'duration <= 60',
       '--print', '%(id)s\t%(title)s\t%(view_count)s\t%(like_count)s\t%(upload_date)s\t%(duration_string)s\t%(thumbnail)s',
       '--no-warnings',
       '--quiet',
