@@ -1222,8 +1222,8 @@ function renderScrapedVideos(videos) {
       ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:56px;height:100px;object-fit:cover;border-radius:5px;flex-shrink:0;">` : ''}
       <div style="flex:1;min-width:0;">
         <div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${v.title}</div>
-        <div style="font-size:10px;color:var(--tdim);margin-bottom:2px;">👁 ${fmtNum(v.views)}${v.likes ? ' · ❤️ ' + fmtNum(v.likes) : ''}</div>
-        <div style="font-size:9px;color:var(--tmut);">${[v.date, v.duration].filter(x=>x&&x!=='NA'&&x!=='N/A').join(' · ')}</div>
+        <div style="font-size:10px;color:var(--tdim);margin-bottom:2px;">👁 ${fmtNum(v.view_count||v.views)}${v.like_count ? ' · ❤️ ' + fmtNum(v.like_count) : ''}${v.comment_count ? ' · 💬 ' + fmtNum(v.comment_count) : ''}</div>
+        <div style="font-size:9px;color:var(--tmut);">${[v.publish_date?v.publish_date.slice(0,10):'', v.duration_human||v.duration].filter(x=>x&&x!=='NA').join(' · ')}</div>
         ${v.url ? `<a href="${v.url}" target="_blank" style="font-size:9px;color:var(--yd);text-decoration:none;font-family:'Space Mono',monospace;">↗ Open</a>` : ''}
       </div>
     </div>
