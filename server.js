@@ -452,10 +452,11 @@ app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
   const { strength = 'medium' } = req.body;
+  // Presets tuned for voice: only remove genuine dead air, not word gaps
   const presets = {
-    light:  { db: '-50', duration: '0.5' },
-    medium: { db: '-40', duration: '0.3' },
-    strong: { db: '-30', duration: '0.1' },
+    light:  { db: '-45', duration: '1.5', stop_duration: '0.8' },
+    medium: { db: '-38', duration: '0.8', stop_duration: '0.4' },
+    strong: { db: '-30', duration: '0.4', stop_duration: '0.2' },
   };
   const p = presets[strength] || presets.medium;
   try {
@@ -463,7 +464,7 @@ app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
       const outputPath = path.resolve(`outputs/trimmed_${timestamp}.mp4`);
       runFFmpeg([
         '-y', '-i', videoPath,
-        '-af', `silenceremove=start_periods=1:start_duration=${p.duration}:start_threshold=${p.db}dB:stop_periods=-1:stop_duration=${p.duration}:stop_threshold=${p.db}dB`,
+        '-af', `silenceremove=start_periods=1:start_duration=${p.duration}:start_threshold=${p.db}dB:stop_periods=-1:stop_duration=${p.stop_duration}:stop_threshold=${p.db}dB,speechnorm`,
         '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-c:a', 'aac', outputPath
       ], 300000);
       try { fs.unlinkSync(videoPath); } catch(e) {}
