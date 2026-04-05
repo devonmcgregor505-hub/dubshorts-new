@@ -27,7 +27,7 @@ function runFFmpeg(args, timeout = 180000) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use((req, res, next) => { req.setTimeout(0); res.setTimeout(0); if (req.socket) req.socket.setTimeout(0); next(); });
+app.use((req, res, next) => { req.setTimeout(0); res.setTimeout(0); next(); });
 app.use(cors());
 app.use(express.static(__dirname));
 app.use(express.json());
@@ -155,36 +155,17 @@ app.post('/generate-video', upload.single('image'), async (req, res) => {
       let videoUrl;
 
       // ── GROK via Kie.ai ──
-      if (model === 'grok' || model.startsWith('grok-')) {
+      if (model === 'grok') {
         if (!KIE_KEY) throw new Error('KIE_API_KEY not configured in .env');
 
-        // Build Grok input — switch model based on whether image is provided
-        let grokModel = 'grok-imagine/text-to-video';
-        const grokInput = {
-          prompt: prompt || 'Cinematic motion',
-          aspect_ratio: aspectRatio,
-          duration: String(parseInt(duration)),
-          resolution: quality,
-        };
-
-        // If image uploaded, use image-to-video model
-        if (imagePath && fs.existsSync(imagePath)) {
-          grokModel = 'grok-imagine/image-to-video';
-          const tempImgName = `temp_${timestamp}.jpg`;
-          const tempImgPath = path.resolve(`outputs/${tempImgName}`);
-          fs.copyFileSync(imagePath, tempImgPath);
-          const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-            : `http://localhost:${PORT}`;
-          grokInput.image_urls = [`${baseUrl}/outputs/${tempImgName}`];
-          console.log(`[grok] image-to-video url=${grokInput.image_urls[0]}`);
-          // Clean up temp image after 10 minutes
-          setTimeout(() => { try { fs.unlinkSync(tempImgPath); } catch(e) {} }, 600000);
-        }
-
         const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', {
-          model: grokModel,
-          input: grokInput,
+          model: 'grok-imagine/text-to-video',
+          input: {
+            prompt: prompt || 'Cinematic motion',
+            aspect_ratio: aspectRatio,
+            duration: parseInt(duration),
+            resolution: quality,
+          },
         }, {
           headers: { 'Authorization': `Bearer ${KIE_KEY}`, 'Content-Type': 'application/json' },
           timeout: 60000,
@@ -293,17 +274,8 @@ app.post('/generate-image', upload.single('refImage'), async (req, res) => {
         input: { prompt, aspect_ratio: aspectRatio, resolution: kieResolution, output_format: 'png' },
       };
       if (refImagePath && fs.existsSync(refImagePath)) {
-        // Serve image temporarily via public URL (Kie.ai needs a URL, not base64)
-        const tempImgName = `temp_ref_${timestamp}.jpg`;
-        const tempImgPublic = path.resolve(`outputs/${tempImgName}`);
-        fs.copyFileSync(refImagePath, tempImgPublic);
-        const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-          : `http://localhost:${PORT}`;
-        const refImageUrl = `${baseUrl}/outputs/${tempImgName}`;
-        console.log(`[generate-image] refImageUrl=${refImageUrl}`);
-        body.input.image_input = [refImageUrl];
-        setTimeout(() => { try { fs.unlinkSync(tempImgPublic); } catch(e) {} }, 600000);
+        body.input.image_input = fs.readFileSync(refImagePath).toString('base64');
+        body.input.image_mime_type = req.file.mimetype || 'image/jpeg';
       }
 
       const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', body, {
@@ -476,98 +448,22 @@ app.post('/upscale-video', upload.single('video'), async (req, res) => {
 // DEAD SPACE REMOVER  —  POST /remove-deadspace
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
-  const { strength = 'medium' } = req.body;
-
-  // Voice-tuned presets: db = noise floor, duration = min silence length to cut
-  const presets = {
-    light:  { db: '-45', duration: '1.2' },
-    medium: { db: '-38', duration: '0.6' },
-    strong: { db: '-32', duration: '0.25' },
-  };
-  const p = presets[strength] || presets.medium;
-
+  const { dbThreshold = '-40' } = req.body;
   try {
     await enqueue(async () => {
-      let inputPath = videoPath;
       const outputPath = path.resolve(`outputs/trimmed_${timestamp}.mp4`);
-      const compressedPath = path.resolve(`outputs/compressed_${timestamp}.mp4`);
-
-      // Step 0: auto-compress if over 100MB
-      const fileSizeMB = require('fs').statSync(videoPath).size / (1024 * 1024);
-      if (fileSizeMB > 100) {
-        console.log(`[deadspace] compressing ${fileSizeMB.toFixed(0)}MB file first...`);
-        runFFmpeg([
-          '-y', '-i', videoPath,
-          '-c:v', 'libx264', '-crf', '28', '-preset', 'fast',
-          '-c:a', 'aac', '-b:a', '128k',
-          '-vf', 'scale=1280:-2',
-          compressedPath
-        ], 300000);
-        inputPath = compressedPath;
-        console.log(`[deadspace] compressed to ${(fs.statSync(compressedPath).size/1024/1024).toFixed(0)}MB`);
-      }
-
-      // Step 1: detect silence using voice frequency range
-      console.log(`[deadspace] detecting silence: db=${p.db} duration=${p.duration}s`);
-      const detectResult = spawnSync(FFMPEG_PATH, [
-        '-i', inputPath,
-        '-af', `highpass=f=100,lowpass=f=6000,afftdn=nf=-25,silencedetect=noise=${p.db}dB:duration=${p.duration}`,
-        '-f', 'null', '-'
-      ], { encoding: 'utf8', timeout: 120000, maxBuffer: 10 * 1024 * 1024 });
-
-      const stderr = (detectResult.stderr || '') + (detectResult.stdout || '');
-      const silenceStarts = [...stderr.matchAll(/silence_start: ([\d.]+)/g)].map(m => parseFloat(m[1]));
-      const silenceEnds = [...stderr.matchAll(/silence_end: ([\d.]+)/g)].map(m => parseFloat(m[1]));
-
-      console.log(`[deadspace] found ${silenceStarts.length} silence intervals`);
-
-      if (silenceStarts.length === 0) {
-        // No silence detected — just re-encode
-        console.log('[deadspace] no silence found, copying...');
-        runFFmpeg(['-y', '-i', inputPath, '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-c:a', 'aac', outputPath], 120000);
-      } else {
-        // Step 2: build keep intervals
-        const keepIntervals = [];
-        let cursor = 0;
-        for (let i = 0; i < silenceStarts.length; i++) {
-          if (silenceStarts[i] > cursor + 0.05) {
-            keepIntervals.push([cursor, silenceStarts[i]]);
-          }
-          cursor = silenceEnds[i] !== undefined ? silenceEnds[i] : silenceStarts[i] + parseFloat(p.duration);
-        }
-        keepIntervals.push([cursor, 999999]);
-
-        console.log(`[deadspace] keeping ${keepIntervals.length} segments`);
-
-        // Step 3: cut video + audio in sync
-        const selectExpr = keepIntervals
-          .map(([s, e]) => `between(t,${s.toFixed(3)},${e.toFixed(3)})`)
-          .join('+');
-
-        runFFmpeg([
-          '-y', '-i', inputPath,
-          '-vf', `select='${selectExpr}',setpts=N/FRAME_RATE/TB`,
-          '-af', `aselect='${selectExpr}',asetpts=N/SR/TB`,
-          '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
-          '-c:a', 'aac', '-vsync', 'vfr', outputPath
-        ], 300000);
-      }
-
+      runFFmpeg(['-y', '-i', videoPath, '-af', `silenceremove=1:0:0.1:${dbThreshold}dB:1:0.1:${dbThreshold}dB`, '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-c:a', 'aac', outputPath], 300000);
       try { fs.unlinkSync(videoPath); } catch(e) {}
-      if (inputPath !== videoPath) try { fs.unlinkSync(inputPath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
     });
     res.json({ success: true, videoUrl: `/outputs/trimmed_${timestamp}.mp4` });
   } catch(err) {
-    console.error('[deadspace] error:', err.message);
     try { fs.unlinkSync(videoPath); } catch(e) {}
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // ══════════════════════════════════════════════════════════════════════════════
 // YT SCRAPER  —  POST /scrape-channel  (YouTube Data API v3)
@@ -580,6 +476,7 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
   if (!YT_KEY) return res.json({ success: false, error: 'YOUTUBE_API_KEY not set' });
 
   try {
+    // Step 1: resolve channel handle to channel ID
     const handle = channelUrl.replace(/\/$/, '').split('/').pop().replace('@', '');
     console.log(`[scraper] resolving handle=${handle} sort=${sort} count=${count}`);
 
@@ -591,6 +488,7 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
     if (!channelId) throw new Error('Could not find channel: ' + handle);
     console.log(`[scraper] channelId=${channelId}`);
 
+    // Step 2: get uploads playlist ID
     const chanRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
       params: { part: 'contentDetails', id: channelId, key: YT_KEY },
       timeout: 10000,
@@ -598,6 +496,7 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
     const uploadsPlaylistId = chanRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
     if (!uploadsPlaylistId) throw new Error('Could not get uploads playlist');
 
+    // Step 3: fetch video IDs (fetch more for popular/trending so we can sort)
     const fetchCount = Math.min(parseInt(count) * (sort === 'newest' ? 1 : 4), 200);
     let videoIds = [];
     let pageToken = '';
@@ -613,6 +512,7 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
     videoIds = videoIds.slice(0, fetchCount);
     console.log(`[scraper] got ${videoIds.length} video IDs`);
 
+    // Step 4: fetch metadata in batches of 50
     let videos = [];
     for (let i = 0; i < videoIds.length; i += 50) {
       const batch = videoIds.slice(i, i + 50);
@@ -621,6 +521,7 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
         timeout: 15000,
       });
       for (const item of vRes.data.items) {
+        // Parse ISO 8601 duration
         const dur = item.contentDetails.duration || '';
         const mMatch = dur.match(/(\d+)M/);
         const sMatch = dur.match(/(\d+)S/);
@@ -628,17 +529,10 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
         const durSec = (hMatch ? parseInt(hMatch[1]) * 3600 : 0) +
                        (mMatch ? parseInt(mMatch[1]) * 60 : 0) +
                        (sMatch ? parseInt(sMatch[1]) : 0);
+        // Only keep shorts (≤3 min)
         if (durSec > 180) continue;
         const mins = Math.floor(durSec / 60);
         const secs = durSec % 60;
-
-        // Fetch transcript via python script
-        let transcript = '';
-        const tResult = spawnSync('python3', ['get_transcript.py', item.id], {
-          encoding: 'utf8', timeout: 8000, cwd: __dirname
-        });
-        transcript = (tResult.stdout || '').trim();
-
         videos.push({
           video_id: item.id,
           url: `https://www.youtube.com/watch?v=${item.id}`,
@@ -655,15 +549,17 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
           thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || '',
           description: item.snippet.description || '',
           tags: (item.snippet.tags || []).join(', '),
-          transcript,
+          transcript: '',
           is_live: false,
           category: item.snippet.categoryId || '',
         });
       }
     }
 
-    if (sort === 'popular') videos.sort((a, b) => b.view_count - a.view_count);
-    if (sort === 'trending') {
+    // Step 5: sort and trim
+    if (sort === 'popular') {
+      videos.sort((a, b) => b.view_count - a.view_count);
+    } else if (sort === 'trending') {
       const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
       videos = videos.filter(v => new Date(v.publish_date).getTime() > cutoff);
       videos.sort((a, b) => b.view_count - a.view_count);
@@ -678,103 +574,20 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
   }
 });
 
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CLAUDE API PROXY  —  POST /api/claude
-// ══════════════════════════════════════════════════════════════════════════════
-app.post('/api/claude', express.json(), async (req, res) => {
-  const { prompt, max_tokens = 1000 } = req.body;
-  if (!prompt) return res.json({ success: false, error: 'No prompt provided' });
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_KEY) return res.status(500).json({ success: false, error: 'ANTHROPIC_API_KEY not set' });
-  try {
-    const response = await axios.post('https://api.anthropic.com/v1/messages', {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens,
-      messages: [{ role: 'user', content: prompt }],
-    }, {
-      headers: {
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      timeout: 60000,
-    });
-    res.json(response.data);
-  } catch(err) {
-    console.error('[claude-api] error:', err.message);
-    const detail = err.response?.data || err.message;
-    console.error('[claude-api] detail:', JSON.stringify(detail));
-    res.status(500).json({ success: false, error: err.message, detail });
-  }
-});
-
 app.post('/enable-repurpose', async (req, res) => {
   const { ytChannel, platforms } = req.body;
   res.json({ success: true, status: 'active', monitoring: ytChannel, platforms });
-});
-
-// ── Legal pages ──
-app.get('/terms', (req, res) => {
-  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Terms of Service - DubShorts</title>
-  <style>body{font-family:sans-serif;max-width:800px;margin:60px auto;padding:0 20px;line-height:1.7;color:#222;}h1{color:#000;}a{color:#0066cc;}</style></head>
-  <body>
-  <h1>Terms of Service</h1>
-  <p><strong>Last updated: April 2026</strong></p>
-  <p>By using DubShorts AI Studio ("the Service"), you agree to these terms.</p>
-  <h2>1. Use of Service</h2>
-  <p>DubShorts provides AI-powered tools for content creation. You are responsible for all content you create and publish using the Service.</p>
-  <h2>2. TikTok Integration</h2>
-  <p>When you connect your TikTok account, you authorize DubShorts to upload content on your behalf. You may revoke access at any time through TikTok's settings.</p>
-  <h2>3. Content</h2>
-  <p>You retain ownership of all content you create. You grant DubShorts a limited license to process your content solely to provide the Service.</p>
-  <h2>4. Prohibited Use</h2>
-  <p>You may not use the Service to create content that violates TikTok's Community Guidelines or any applicable laws.</p>
-  <h2>5. Disclaimer</h2>
-  <p>The Service is provided "as is" without warranties of any kind. DubShorts is not responsible for any content published to third-party platforms.</p>
-  <h2>6. Contact</h2>
-  <p>For questions, contact us at support@dubshorts.ai</p>
-  </body></html>`);
-});
-
-app.get('/privacy', (req, res) => {
-  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Privacy Policy - DubShorts</title>
-  <style>body{font-family:sans-serif;max-width:800px;margin:60px auto;padding:0 20px;line-height:1.7;color:#222;}h1{color:#000;}a{color:#0066cc;}</style></head>
-  <body>
-  <h1>Privacy Policy</h1>
-  <p><strong>Last updated: April 2026</strong></p>
-  <h2>1. Information We Collect</h2>
-  <p>We collect information you provide when using DubShorts, including prompts, uploaded media, and account connection tokens.</p>
-  <h2>2. TikTok Data</h2>
-  <p>When you connect your TikTok account via OAuth, we store only the access token required to upload content on your behalf. We do not store your TikTok password. You can revoke access at any time.</p>
-  <h2>3. How We Use Your Data</h2>
-  <p>We use your data solely to provide the Service. We do not sell your data to third parties.</p>
-  <h2>4. Data Storage</h2>
-  <p>Generated content is temporarily stored on our servers and automatically deleted after 10 minutes. Access tokens are encrypted at rest.</p>
-  <h2>5. Third-Party Services</h2>
-  <p>DubShorts uses the following third-party services: TikTok (content posting), Kie.ai (AI generation), Modal (voice processing), Railway (hosting).</p>
-  <h2>6. Your Rights</h2>
-  <p>You may request deletion of your data at any time by contacting support@dubshorts.ai</p>
-  <h2>7. Contact</h2>
-  <p>For privacy questions, contact support@dubshorts.ai</p>
-  </body></html>`);
-});
-
-// ── TikTok domain verification ──
-app.get('/tiktokmbOjActDa5ANJmRCnS6hvkmXi09O0Nt7.txt', (req, res) => {
-  res.type('text/plain').send('tiktok-developers-site-verification=mbOjActDa5ANJmRCnS6hvkmXi09O0Nt7');
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // START
 // ══════════════════════════════════════════════════════════════════════════════
 app.listen(PORT, () => {
-  console.log('\n✅ DubShorts v3 (Full Integration) running at http://localhost:' + PORT);
+  console.log('\n✅ DubShorts v3 running at http://localhost:' + PORT);
   console.log('   MODELSLAB_API_KEY :', process.env.MODELSLAB_API_KEY   ? '✓ set' : '✗ not set');
   console.log('   KIE_API_KEY       :', process.env.KIE_API_KEY         ? '✓ set' : '✗ not set');
   console.log('   CHATTERBOX_URL    :', process.env.CHATTERBOX_MODAL_URL ? '✓ set' : '✗ not set (voice cloning disabled)');
   console.log('   YOUTUBE_API_KEY   :', process.env.YOUTUBE_API_KEY     ? '✓ set' : '✗ not set');
-  console.log('   ANTHROPIC_API_KEY :', process.env.ANTHROPIC_API_KEY   ? '✓ set' : '✗ not set (automation disabled)');
   console.log('');
 });
 
