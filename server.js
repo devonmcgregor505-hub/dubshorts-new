@@ -568,6 +568,116 @@ app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
   }
 });
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+// YT SCRAPER  —  POST /scrape-channel  (YouTube Data API v3)
+// ══════════════════════════════════════════════════════════════════════════════
+app.post('/scrape-channel', express.json(), async (req, res) => {
+  const { channelUrl, count = 25, sort = 'newest' } = req.body;
+  if (!channelUrl) return res.json({ success: false, error: 'No channel URL provided' });
+
+  const YT_KEY = process.env.YOUTUBE_API_KEY;
+  if (!YT_KEY) return res.json({ success: false, error: 'YOUTUBE_API_KEY not set' });
+
+  try {
+    const handle = channelUrl.replace(/\/$/, '').split('/').pop().replace('@', '');
+    console.log(`[scraper] resolving handle=${handle} sort=${sort} count=${count}`);
+
+    const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+      params: { part: 'snippet', q: handle, type: 'channel', maxResults: 1, key: YT_KEY },
+      timeout: 10000,
+    });
+    const channelId = searchRes.data.items?.[0]?.id?.channelId;
+    if (!channelId) throw new Error('Could not find channel: ' + handle);
+    console.log(`[scraper] channelId=${channelId}`);
+
+    const chanRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+      params: { part: 'contentDetails', id: channelId, key: YT_KEY },
+      timeout: 10000,
+    });
+    const uploadsPlaylistId = chanRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploadsPlaylistId) throw new Error('Could not get uploads playlist');
+
+    const fetchCount = Math.min(parseInt(count) * (sort === 'newest' ? 1 : 4), 200);
+    let videoIds = [];
+    let pageToken = '';
+    while (videoIds.length < fetchCount) {
+      const plRes = await axios.get('https://www.googleapis.com/youtube/v3/playlistItems', {
+        params: { part: 'contentDetails', playlistId: uploadsPlaylistId, maxResults: 50, pageToken, key: YT_KEY },
+        timeout: 10000,
+      });
+      videoIds.push(...plRes.data.items.map(i => i.contentDetails.videoId));
+      if (!plRes.data.nextPageToken || videoIds.length >= fetchCount) break;
+      pageToken = plRes.data.nextPageToken;
+    }
+    videoIds = videoIds.slice(0, fetchCount);
+    console.log(`[scraper] got ${videoIds.length} video IDs`);
+
+    let videos = [];
+    for (let i = 0; i < videoIds.length; i += 50) {
+      const batch = videoIds.slice(i, i + 50);
+      const vRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: { part: 'snippet,statistics,contentDetails', id: batch.join(','), key: YT_KEY },
+        timeout: 15000,
+      });
+      for (const item of vRes.data.items) {
+        const dur = item.contentDetails.duration || '';
+        const mMatch = dur.match(/(\d+)M/);
+        const sMatch = dur.match(/(\d+)S/);
+        const hMatch = dur.match(/(\d+)H/);
+        const durSec = (hMatch ? parseInt(hMatch[1]) * 3600 : 0) +
+                       (mMatch ? parseInt(mMatch[1]) * 60 : 0) +
+                       (sMatch ? parseInt(sMatch[1]) : 0);
+        if (durSec > 180) continue;
+        const mins = Math.floor(durSec / 60);
+        const secs = durSec % 60;
+
+        // Fetch transcript via python script
+        let transcript = '';
+        const tResult = spawnSync('python3', ['get_transcript.py', item.id], {
+          encoding: 'utf8', timeout: 8000, cwd: __dirname
+        });
+        transcript = (tResult.stdout || '').trim();
+
+        videos.push({
+          video_id: item.id,
+          url: `https://www.youtube.com/watch?v=${item.id}`,
+          title: item.snippet.title,
+          channel: item.snippet.channelTitle,
+          channel_id: item.snippet.channelId,
+          channel_url: channelUrl,
+          view_count: parseInt(item.statistics.viewCount || 0),
+          like_count: parseInt(item.statistics.likeCount || 0),
+          comment_count: parseInt(item.statistics.commentCount || 0),
+          duration_seconds: durSec,
+          duration_human: mins > 0 ? `${mins}m ${secs}s` : `${secs}s`,
+          publish_date: item.snippet.publishedAt,
+          thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || '',
+          description: item.snippet.description || '',
+          tags: (item.snippet.tags || []).join(', '),
+          transcript,
+          is_live: false,
+          category: item.snippet.categoryId || '',
+        });
+      }
+    }
+
+    if (sort === 'popular') videos.sort((a, b) => b.view_count - a.view_count);
+    if (sort === 'trending') {
+      const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+      videos = videos.filter(v => new Date(v.publish_date).getTime() > cutoff);
+      videos.sort((a, b) => b.view_count - a.view_count);
+    }
+    videos = videos.slice(0, parseInt(count));
+    console.log(`[scraper] returning ${videos.length} videos`);
+    res.json({ success: true, videos });
+
+  } catch(err) {
+    console.error('[scraper] error:', err.message);
+    res.json({ success: false, error: err.message });
+  }
+});
+
 app.post('/enable-repurpose', async (req, res) => {
   const { ytChannel, platforms } = req.body;
   res.json({ success: true, status: 'active', monitoring: ytChannel, platforms });
