@@ -549,7 +549,7 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
           thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || '',
           description: item.snippet.description || '',
           tags: (item.snippet.tags || []).join(', '),
-          transcript: '',
+          transcript: (() => { try { const r = spawnSync('python3', ['get_transcript.py', item.id], { encoding: 'utf8', timeout: 8000, cwd: __dirname }); return (r.stdout || '').trim(); } catch(e) { return ''; } })(),
           is_live: false,
           category: item.snippet.categoryId || '',
         });
