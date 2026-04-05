@@ -773,7 +773,7 @@ app.post('/api/claude', express.json(), async (req, res) => {
   if (!ANTHROPIC_KEY) return res.status(500).json({ success: false, error: 'ANTHROPIC_API_KEY not set' });
   try {
     const response = await axios.post('https://api.anthropic.com/v1/messages', {
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens,
       messages: [{ role: 'user', content: prompt }],
     }, {
