@@ -27,7 +27,7 @@ function runFFmpeg(args, timeout = 180000) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use((req, res, next) => { req.setTimeout(0); res.setTimeout(0); next(); });
+app.use((req, res, next) => { req.setTimeout(0); res.setTimeout(0); if (req.socket) req.socket.setTimeout(0); next(); });
 app.use(cors());
 app.use(express.static(__dirname));
 app.use(express.json());
