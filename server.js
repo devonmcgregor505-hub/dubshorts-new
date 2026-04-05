@@ -417,47 +417,17 @@ app.post('/generate-voice', upload.single('voiceSample'), async (req, res) => {
 app.post('/upscale-video', upload.single('video'), async (req, res) => {
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
-  const { quality, mode = 'ffmpeg' } = req.body;
-
+  const { quality } = req.body;
   try {
-    const result = await enqueue(async () => {
+    await enqueue(async () => {
       const outputPath = path.resolve(`outputs/upscaled_${timestamp}.mp4`);
-
-      if (mode === 'ai') {
-        const UPSCALER_URL = process.env.UPSCALER_MODAL_URL;
-        if (!UPSCALER_URL) throw new Error('UPSCALER_MODAL_URL not set in .env');
-
-        console.log(`[upscale] AI mode quality=${quality} file=${videoPath}`);
-        const videoB64 = fs.readFileSync(videoPath).toString('base64');
-
-        const response = await axios.post(UPSCALER_URL, {
-          video_b64: videoB64,
-          target_res: quality,
-        }, { headers: { 'Content-Type': 'application/json' }, timeout: 900000 });
-
-        if (!response.data.success) throw new Error(response.data.error || 'AI upscale failed');
-        fs.writeFileSync(outputPath, Buffer.from(response.data.video_b64, 'base64'));
-
-      } else {
-        console.log(`[upscale] FFmpeg mode quality=${quality}`);
-        const resMap = { '1080': '1920:-2', '2k': '2560:-2', '4k': '3840:-2' };
-        const scale = resMap[quality] || '1920:-2';
-        runFFmpeg([
-          '-y', '-i', videoPath,
-          '-vf', `scale=${scale}:flags=lanczos,unsharp=5:5:0.8:3:3:0.4,hqdn3d=1.5:1.5:6:6`,
-          '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
-          '-c:a', 'aac', outputPath
-        ], 300000);
-      }
-
+      const resMap = { '1080': '1920:-1', '2k': '2560:-1', '4k': '3840:-1' };
+      runFFmpeg(['-y', '-i', videoPath, '-vf', `scale=${resMap[quality] || '1920:-1'}`, '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-c:a', 'aac', outputPath], 300000);
       try { fs.unlinkSync(videoPath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
-      return { success: true, videoUrl: `/outputs/upscaled_${timestamp}.mp4` };
     });
-
-    res.json(result);
+    res.json({ success: true, videoUrl: `/outputs/upscaled_${timestamp}.mp4` });
   } catch(err) {
-    console.error('[upscale] error:', err.message);
     try { fs.unlinkSync(videoPath); } catch(e) {}
     res.status(500).json({ success: false, error: err.message });
   }
@@ -469,68 +439,23 @@ app.post('/upscale-video', upload.single('video'), async (req, res) => {
 app.post('/remove-deadspace', upload.single('video'), async (req, res) => {
   const videoPath = path.resolve(req.file.path);
   const timestamp = Date.now();
-  const { intensity = 'medium' } = req.body;
-  const intensityMap = {
-    light:      { db: '-50', minDuration: '0.8' },
-    medium:     { db: '-40', minDuration: '0.5' },
-    aggressive: { db: '-30', minDuration: '0.3' },
-  };
-  const cfg = intensityMap[intensity] || intensityMap.medium;
+  const { dbThreshold = '-40' } = req.body;
   try {
-    const result = await enqueue(async () => {
+    await enqueue(async () => {
       const outputPath = path.resolve(`outputs/trimmed_${timestamp}.mp4`);
-      const detect = spawnSync(FFMPEG_PATH, [
-        '-i', videoPath,
-        '-af', `silencedetect=noise=${cfg.db}dB:d=${cfg.minDuration}`,
-        '-f', 'null', '-'
-      ], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
-      const stderr = detect.stderr || '';
-      const silenceStarts = [];
-      const silenceEnds = [];
-      for (const line of stderr.split('\n')) {
-        const s = line.match(/silence_start:\s*([\d.]+)/);
-        const e = line.match(/silence_end:\s*([\d.]+)/);
-        if (s) silenceStarts.push(parseFloat(s[1]));
-        if (e) silenceEnds.push(parseFloat(e[1]));
-      }
-      const durResult = spawnSync(FFMPEG_PATH, ['-i', videoPath, '-f', 'null', '-'], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
-      const durMatch = (durResult.stderr || '').match(/Duration:\s*([\d:]+)/);
-      let totalDuration = 9999;
-      if (durMatch) {
-        const parts = durMatch[1].split(':').map(Number);
-        totalDuration = parts[0] * 3600 + parts[1] * 60 + parts[2];
-      }
-      const keeps = [];
-      let cursor = 0;
-      for (let i = 0; i < silenceStarts.length; i++) {
-        if (silenceStarts[i] > cursor + 0.05) keeps.push([cursor, silenceStarts[i]]);
-        cursor = silenceEnds[i] || cursor;
-      }
-      if (cursor < totalDuration - 0.05) keeps.push([cursor, totalDuration]);
-      if (keeps.length === 0) {
-        runFFmpeg(['-y', '-i', videoPath, '-c', 'copy', outputPath], 60000);
-      } else {
-        const vSelect = keeps.map(([s, e]) => `between(t,${s},${e})`).join('+');
-        runFFmpeg([
-          '-y', '-i', videoPath,
-          '-vf', `select='${vSelect}',setpts=N/FRAME_RATE/TB`,
-          '-af', `aselect='${vSelect}',asetpts=N/SR/TB`,
-          '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
-          '-c:a', 'aac', outputPath
-        ], 300000);
-      }
+      runFFmpeg(['-y', '-i', videoPath, '-af', `silenceremove=1:0:0.1:${dbThreshold}dB:1:0.1:${dbThreshold}dB`, '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-c:a', 'aac', outputPath], 300000);
       try { fs.unlinkSync(videoPath); } catch(e) {}
       setTimeout(() => { try { fs.unlinkSync(outputPath); } catch(e) {} }, 600000);
-      return { success: true, videoUrl: `/outputs/trimmed_${timestamp}.mp4` };
     });
-    res.json(result);
+    res.json({ success: true, videoUrl: `/outputs/trimmed_${timestamp}.mp4` });
   } catch(err) {
-    console.error('[deadspace] error:', err.message);
     try { fs.unlinkSync(videoPath); } catch(e) {}
     res.status(500).json({ success: false, error: err.message });
   }
 });
-// YT SCRAPER / REPURPOSE — stubs
+
+// ══════════════════════════════════════════════════════════════════════════════
+// YT SCRAPER  —  POST /scrape-channel
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/scrape-channel', express.json(), async (req, res) => {
   const { channelUrl, count = 25, sort = 'newest' } = req.body;
@@ -538,13 +463,13 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
 
   try {
     // ── Step 1: get video IDs fast via flat-playlist ──
-    const listArgs = ['--flat-playlist', '--print', '%(id)s', '--no-warnings', '--quiet'];
     const pool = Math.min(parseInt(count) * (sort === 'trending' ? 6 : sort === 'popular' ? 4 : 1), 400);
+    const listArgs = ['--flat-playlist', '--print', '%(id)s', '--no-warnings', '--quiet'];
 
     if (sort === 'trending') {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 90);
-      listArgs.push('--dateafter', cutoff.toISOString().slice(0,10).replace(/-/g,''));
+      listArgs.push('--dateafter', cutoff.toISOString().slice(0, 10).replace(/-/g, ''));
     }
     listArgs.push('--playlist-end', String(pool));
     listArgs.push(channelUrl + '/shorts');
@@ -557,13 +482,14 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
     if (ids.length === 0) throw new Error('No videos found for this channel');
     console.log(`[scraper] got ${ids.length} IDs, fetching metadata in parallel...`);
 
-    // ── Step 2: parallel metadata + transcript fetch ──
+    // ── Step 2: parallel metadata + transcript fetch (8 at a time) ──
     const CONCURRENCY = 8;
     const results = [];
     for (let i = 0; i < ids.length; i += CONCURRENCY) {
       const batch = ids.slice(i, i + CONCURRENCY);
       const batchResults = await Promise.all(batch.map(async (id) => {
         const url = `https://www.youtube.com/watch?v=${id}`;
+
         // Metadata
         const metaResult = spawnSync('yt-dlp', [
           url, '--dump-json', '--no-warnings', '--quiet', '--skip-download', '--no-playlist',
@@ -593,8 +519,9 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
               .replace(/<[^>]+>/g, '')
               .split('\n').map(l => l.trim()).filter(l => l && !/^[\d:.,\s]+$/.test(l));
             const seen = new Set();
-            transcript = vttLines.filter(l => { if (seen.has(l)) return false; seen.add(l); return true; })
-              .join('\n').replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/&amp;/g,'&');
+            transcript = vttLines
+              .filter(l => { if (seen.has(l)) return false; seen.add(l); return true; })
+              .join('\n').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
             fs.unlinkSync(vttPath);
           } catch(e) {}
         }
@@ -611,7 +538,9 @@ app.post('/scrape-channel', express.json(), async (req, res) => {
           comment_count: meta.comment_count || 0,
           duration_seconds: durationSec,
           duration_human: durationHuman,
-          publish_date: meta.upload_date ? `${meta.upload_date.slice(0,4)}-${meta.upload_date.slice(4,6)}-${meta.upload_date.slice(6,8)}T00:00:00Z` : '',
+          publish_date: meta.upload_date
+            ? `${meta.upload_date.slice(0,4)}-${meta.upload_date.slice(4,6)}-${meta.upload_date.slice(6,8)}T00:00:00Z`
+            : '',
           thumbnail: meta.thumbnail || '',
           description: meta.description || '',
           tags: (meta.tags || []).join(', '),

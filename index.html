@@ -449,7 +449,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
           </div>
         </div>
         <button class="btn" id="dsBtn" onclick="startDeadspace()" disabled>🎬 Remove Dead Space</button>
-        <div class="err-box" id="dsErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="dsErrMsg"></div></div>
       </div>
       <div class="right-panel">
         <div class="phone-wrap">
@@ -463,6 +462,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
       </div>
     </div>
   </div>
+
   <!-- ══ YT SCRAPER ══ -->
   <div class="tab-panel" id="tab-scraper">
     <div class="workspace">
@@ -475,20 +475,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
           <div class="card-hd">Settings</div>
           <div class="card-body">
             <div class="setting-row">
-              <label class="setting-label">Sort By</label>
-              <select class="select" id="ytSort">
-                <option value="newest" selected>📅 Newest</option>
-                <option value="popular">🔥 Most Popular</option>
-                <option value="trending">📈 Trending (recent + viral)</option>
-              </select>
-            </div>
-            <div class="setting-row">
               <label class="setting-label">Number of Videos</label>
               <select class="select" id="ytCount">
                 <option value="10">10 videos</option>
                 <option value="25" selected>25 videos</option>
                 <option value="50">50 videos</option>
                 <option value="100">100 videos</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Sort By</label>
+              <select class="select" id="ytSort">
+                <option value="newest" selected>📅 Newest</option>
+                <option value="popular">🔥 Most Popular</option>
+                <option value="trending">📈 Trending (recent + viral)</option>
               </select>
             </div>
             <div class="setting-row">
@@ -501,15 +501,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
         <div class="err-box" id="scrapErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="scrapErrMsg"></div></div>
       </div>
       <div class="right-panel">
-        <div style="width:100%;max-width:500px;background:var(--s2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="width:100%;max-width:400px;background:var(--s2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;">
           <div style="padding:14px;border-bottom:1px solid var(--bd);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--y);">Scraped Videos</div>
-          <div id="scrapList" style="flex:1;overflow-y:auto;max-height:calc(100vh - 200px);padding:10px;">
-            <div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No data yet — enter a channel URL and click Scrape</div>
+          <div id="scrapList" style="max-height:300px;overflow-y:auto;padding:10px;">
+            <div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No data yet</div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
   <!-- ══ REPURPOSE ══ -->
   <div class="tab-panel" id="tab-repurpose">
     <div class="workspace">
@@ -1079,22 +1080,13 @@ deadspaceZone.addEventListener('dragover', e => { e.preventDefault(); deadspaceZ
 deadspaceZone.addEventListener('dragleave', () => deadspaceZone.classList.remove('drag'));
 deadspaceZone.addEventListener('drop', e => { e.preventDefault(); deadspaceZone.classList.remove('drag'); if (e.dataTransfer.files[0]) loadDeadspace(e.dataTransfer.files[0]); });
 document.getElementById('deadspaceInput').addEventListener('change', () => { if (document.getElementById('deadspaceInput').files[0]) loadDeadspace(document.getElementById('deadspaceInput').files[0]); });
-function loadDeadspace(f) {
-  document.getElementById('deadspaceFnm').textContent = '📎 ' + f.name;
-  document.getElementById('deadspaceZone').classList.add('has-file');
-  document.getElementById('dsBtn').disabled = false;
-  const vid = document.getElementById('dsVid');
-  vid.src = URL.createObjectURL(f);
-  vid.style.display = 'block';
-  document.getElementById('dsEmpty').style.display = 'none';
-}
+function loadDeadspace(f) { document.getElementById('deadspaceFnm').textContent = '📎 ' + f.name; deadspaceZone.classList.add('has-file'); document.getElementById('dsBtn').disabled = false; const vid = document.getElementById('dsVid'); vid.src = URL.createObjectURL(f); vid.style.display = 'block'; }
 function updateDbVal() { document.getElementById('dbVal').textContent = document.getElementById('dbSlider').value; }
 async function startDeadspace() {
   const fileInput = document.getElementById('deadspaceInput');
   if (!fileInput.files[0]) { alert('Please upload a video first.'); return; }
   const btn = document.getElementById('dsBtn');
   btn.disabled = true; btn.textContent = '⏳ Processing…';
-  document.getElementById('dsErr').classList.remove('vis');
   try {
     const fd = new FormData();
     fd.append('video', fileInput.files[0]);
@@ -1108,14 +1100,39 @@ async function startDeadspace() {
     document.getElementById('dsDlBtn').href = data.videoUrl;
     document.getElementById('dsDlWrap').style.display = 'block';
   } catch(err) {
-    document.getElementById('dsErr').classList.add('vis');
-    document.getElementById('dsErrMsg').textContent = err.message;
+    alert('Error: ' + err.message);
   }
   btn.disabled = false; btn.textContent = '🎬 Remove Dead Space';
 }
 
 // ══ YT SCRAPER ══
-function startScrape() { if (!document.getElementById('ytChannelUrl').value.trim()) { alert('Please enter a channel URL.'); return; } alert('✓ Scraping started!'); }
+async function startScrape() {
+  const url = document.getElementById('ytChannelUrl').value.trim();
+  if (!url) { alert('Please enter a channel URL.'); return; }
+  const btn = document.getElementById('scrapBtn');
+  btn.disabled = true; btn.textContent = '⏳ Scraping…';
+  document.getElementById('scrapErr').classList.remove('vis');
+  document.getElementById('scrapList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">⏳ Scraping channel… this may take a minute</div>';
+  try {
+    const res = await fetch('/scrape-channel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channelUrl: url,
+        count: document.getElementById('ytCount').value,
+        sort: document.getElementById('ytSort').value,
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Scrape failed');
+    renderScrapedVideos(data.videos);
+  } catch(err) {
+    document.getElementById('scrapErr').classList.add('vis');
+    document.getElementById('scrapErrMsg').textContent = err.message;
+    document.getElementById('scrapList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No data yet</div>';
+  }
+  btn.disabled = false; btn.textContent = '🎥 Scrape Channel';
+}
 
 // ══ REPURPOSE ══
 function connectTiktok() { document.getElementById('tiktokStatus').textContent = 'Connected ✓'; }
@@ -1148,40 +1165,6 @@ renderVoiceDropdown();
 renderVoiceOutputs();
 document.getElementById('repTiktok').dispatchEvent(new Event('change'));
 document.getElementById('repInstagram').dispatchEvent(new Event('change'));
-
-function renderScrapedVideos(videos) {
-  const list = document.getElementById('scrapList');
-  if (!videos || videos.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No videos found</div>';
-    return;
-  }
-  list.innerHTML = videos.map((v, i) => `
-    <div style="padding:10px;border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start;">
-      <div style="font-size:10px;color:var(--tmut);font-family:'Space Mono',monospace;width:16px;flex-shrink:0;padding-top:2px;">${i+1}</div>
-      ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:56px;height:100px;object-fit:cover;border-radius:5px;flex-shrink:0;">` : ''}
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${v.title}</div>
-        <div style="font-size:10px;color:var(--tdim);margin-bottom:2px;">👁 ${fmtNum(v.view_count||v.views)}${v.like_count ? ' · ❤️ ' + fmtNum(v.like_count) : ''}${v.comment_count ? ' · 💬 ' + fmtNum(v.comment_count) : ''}</div>
-        <div style="font-size:9px;color:var(--tmut);">${[v.publish_date?v.publish_date.slice(0,10):'', v.duration_human||v.duration].filter(x=>x&&x!=='NA').join(' · ')}</div>
-        ${v.url ? `<a href="${v.url}" target="_blank" style="font-size:9px;color:var(--yd);text-decoration:none;font-family:'Space Mono',monospace;">↗ Open</a>` : ''}
-      </div>
-    </div>
-  `).join('') + `<div style="padding:10px;text-align:right;"><button onclick="exportScrapeJSON()" style="background:var(--s3);border:1px solid var(--bd);border-radius:6px;color:var(--tdim);font-size:10px;padding:6px 10px;cursor:pointer;font-family:'Space Mono',monospace;">⬇ Export JSON</button></div>`;
-  window._lastScrapeData = videos;
-}
-
-function fmtNum(n) {
-  if (!n && n !== 0) return '—';
-  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
-  return String(n);
-}
-
-function exportScrapeJSON() {
-  const blob = new Blob([JSON.stringify(window._lastScrapeData, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'scraped_videos.json'; a.click();
-}
-
 </script>
 </body>
 </html>
