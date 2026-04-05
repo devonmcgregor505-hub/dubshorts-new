@@ -158,31 +158,32 @@ app.post('/generate-video', upload.single('image'), async (req, res) => {
       if (model === 'grok') {
         if (!KIE_KEY) throw new Error('KIE_API_KEY not configured in .env');
 
-        // Build Grok input — include image if provided
+        // Build Grok input — switch model based on whether image is provided
+        let grokModel = 'grok-imagine/text-to-video';
         const grokInput = {
           prompt: prompt || 'Cinematic motion',
           aspect_ratio: aspectRatio,
-          duration: parseInt(duration),
+          duration: String(parseInt(duration)),
           resolution: quality,
         };
 
-        // If image uploaded, serve it temporarily and pass URL to Kie.ai
-        let tempImgServed = null;
+        // If image uploaded, use image-to-video model
         if (imagePath && fs.existsSync(imagePath)) {
+          grokModel = 'grok-imagine/image-to-video';
           const tempImgName = `temp_${timestamp}.jpg`;
           const tempImgPath = path.resolve(`outputs/${tempImgName}`);
           fs.copyFileSync(imagePath, tempImgPath);
-          tempImgServed = tempImgPath;
-          // Determine public base URL
           const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
             ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
             : `http://localhost:${PORT}`;
-          grokInput.image_url = `${baseUrl}/outputs/${tempImgName}`;
-          console.log(`[grok] image_url=${grokInput.image_url}`);
+          grokInput.image_urls = [`${baseUrl}/outputs/${tempImgName}`];
+          console.log(`[grok] image-to-video url=${grokInput.image_urls[0]}`);
+          // Clean up temp image after 10 minutes
+          setTimeout(() => { try { fs.unlinkSync(tempImgPath); } catch(e) {} }, 600000);
         }
 
         const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', {
-          model: 'grok-imagine/text-to-video',
+          model: grokModel,
           input: grokInput,
         }, {
           headers: { 'Authorization': `Bearer ${KIE_KEY}`, 'Content-Type': 'application/json' },
