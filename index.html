@@ -197,10 +197,261 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
     <span style="color:var(--tdim);margin-left:auto;font-size:11px;font-family:'Space Mono',monospace;">1 credit = $0.01</span>
   </div>
 
-  <!-- ══ AUTOMATION TAB PANEL ══ -->
+  <!-- AI VIDEO GEN TAB -->
+  <div class="tab-panel active" id="tab-vidgen">
+    <div class="workspace">
+      <div class="left-panel">
+        <div class="upload-zone" id="imgDrop" onclick="document.getElementById('imgInput').click()">
+          <input type="file" id="imgInput" accept="image/*" style="display:none">
+          <span class="up-icon">🖼</span>
+          <div class="up-title" id="imgDropTitle">Drop image here <span style="font-size:10px;color:var(--tmut);font-weight:400;">(optional)</span></div>
+          <div class="up-hint">PNG · JPG · WEBP</div>
+          <div class="up-name" id="imgFnm"></div>
+        </div>
+        <div>
+          <div class="sec-lbl">Prompt</div>
+          <textarea class="textarea" id="aivgPrompt" rows="3" placeholder="Describe the motion…"></textarea>
+        </div>
+        <div class="card">
+          <div class="card-hd">Settings</div>
+          <div class="card-body">
+            <div class="setting-row">
+              <label class="setting-label">Model</label>
+              <select class="select" id="vidModel">
+                <option value="grok-720p" selected>Grok 720p — 30cr</option>
+                <option value="grok-480p">Grok 480p — 15cr</option>
+                <option value="veo3-lite">Veo 3.1 Lite — 20cr</option>
+                <option value="sora2">Sora 2 — 20cr</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Duration</label>
+              <select class="select" id="vidDuration">
+                <option value="5">5 seconds</option>
+                <option value="8" selected>8 seconds</option>
+                <option value="10">10 seconds</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Aspect Ratio</label>
+              <select class="select" id="vidAspect">
+                <option value="9:16" selected>9:16 (Portrait)</option>
+                <option value="16:9">16:9 (Landscape)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button class="btn" id="vidBtn" onclick="startVidGen()">⚡ Generate Video</button>
+        <div class="prog-wrap" id="vidProg">
+          <div class="prog-lbl"><span id="vpLbl">Submitting job…</span><span id="vpPct">0%</span></div>
+          <div class="prog-track"><div class="prog-fill" id="vpFill"></div></div>
+        </div>
+        <div class="err-box" id="vidErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="vidErrMsg"></div></div>
+      </div>
+      <div class="right-panel">
+        <div class="phone-wrap">
+          <div class="ph-empty" id="vidEmpty"><span>📱</span><p>Generate a video to preview</p></div>
+          <video class="ph-video" id="vidVideo" controls playsinline loop></video>
+        </div>
+        <div class="prev-lbl">PREVIEW</div>
+        <div class="result-btns" id="vidResultBtns">
+          <a class="dl-btn" id="vidDlBtn" href="#" download="video.mp4">⬇ Download Video</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI IMAGE GEN TAB -->
+  <div class="tab-panel" id="tab-imggen">
+    <div class="workspace">
+      <div class="left-panel">
+        <div class="upload-zone" id="refImgDrop" onclick="document.getElementById('refImgInput').click()">
+          <input type="file" id="refImgInput" accept="image/*" style="display:none">
+          <span class="up-icon">📷</span>
+          <div class="up-title">Reference Image <span style="font-size:10px;color:var(--tmut);font-weight:400;">(optional)</span></div>
+          <div class="up-hint">PNG · JPG · WEBP</div>
+          <div class="up-name" id="refImgFnm"></div>
+        </div>
+        <div>
+          <div class="sec-lbl">Prompt</div>
+          <textarea class="textarea" id="imgPrompt" rows="4" placeholder="Describe the image you want to generate…"></textarea>
+        </div>
+        <div class="card">
+          <div class="card-hd">Settings</div>
+          <div class="card-body">
+            <div class="setting-row">
+              <label class="setting-label">Model</label>
+              <select class="select" id="imgModel">
+                <option value="nano-banana-pro" selected>Nano Banana Pro</option>
+                <option value="nano-banana-2">Nano Banana 2</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Aspect Ratio</label>
+              <select class="select" id="imgAspect">
+                <option value="9:16" selected>9:16 (Portrait)</option>
+                <option value="16:9">16:9 (Landscape)</option>
+                <option value="1:1">1:1 (Square)</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Resolution</label>
+              <select class="select" id="imgResolution">
+                <option value="1K" selected>1K</option>
+                <option value="2K">2K</option>
+                <option value="4K">4K</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button class="btn" id="imgBtn" onclick="startImgGen()">🎨 Generate Image</button>
+        <div class="prog-wrap" id="imgProg">
+          <div class="prog-lbl"><span id="ipLbl">Generating...</span><span id="ipPct">0%</span></div>
+          <div class="prog-track"><div class="prog-fill" id="ipFill"></div></div>
+        </div>
+        <div class="err-box" id="imgErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="imgErrMsg"></div></div>
+      </div>
+      <div class="right-panel">
+        <div id="imgPreviewWrap" style="width:100%;max-width:360px;border-radius:12px;background:var(--s3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;overflow:hidden;aspect-ratio:9/16;">
+          <img id="genImgPrev" style="width:100%;height:100%;object-fit:cover;display:none;" alt="Generated image">
+          <div id="imgEmpty" style="text-align:center;color:var(--tdim);padding:20px;">
+            <span style="font-size:32px;display:block;margin-bottom:8px;">🎨</span>
+            <p style="font-size:11px;">Your generated image will appear here</p>
+          </div>
+        </div>
+        <div class="prev-lbl">PREVIEW</div>
+        <a class="dl-btn" id="dlImgBtn" href="#" download="image.png" style="display:none;width:100%;max-width:360px;">⬇ Download Image</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOICE GEN TAB -->
+  <div class="tab-panel" id="tab-voicegen">
+    <div class="workspace" style="height:100%;overflow:hidden;">
+      <div class="left-panel">
+        <div>
+          <div class="sec-lbl">Text to Speak</div>
+          <textarea class="textarea" id="voiceText" placeholder="Enter the text you want to convert to speech…" rows="8"></textarea>
+          <div class="char-count"><span id="voiceCharCount">0</span> / 5000 characters</div>
+        </div>
+        <div class="card">
+          <div class="card-hd">Voice Settings</div>
+          <div class="card-body">
+            <div class="setting-row">
+              <label class="setting-label">Voice</label>
+              <select class="select" id="voiceId">
+                <option value="adam" selected>Adam</option>
+                <option value="bella">Bella</option>
+                <option value="charlie">Charlie</option>
+                <option value="dorothy">Dorothy</option>
+                <option value="echo">Echo</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Stability</label>
+              <div class="slider-row">
+                <input type="range" class="slider" id="voiceStability" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('voiceStabilityVal').textContent = Math.round(this.value * 100) + '%'">
+                <div class="slider-labels"><span>Variable</span><span id="voiceStabilityVal">50%</span><span>Stable</span></div>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Speed</label>
+              <div class="slider-row">
+                <input type="range" class="slider" id="voiceSpeed" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('voiceSpeedVal').textContent = this.value + 'x'">
+                <div class="slider-labels"><span>Slow</span><span id="voiceSpeedVal">1x</span><span>Fast</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn" id="voiceBtn" onclick="startVoiceGen()">🔊 Generate Voice</button>
+        <div class="prog-wrap" id="voiceProg">
+          <div class="prog-lbl"><span>Generating audio…</span><span id="vprogPct">0%</span></div>
+          <div class="prog-track"><div class="prog-fill" id="vprogFill"></div></div>
+        </div>
+        <div class="err-box" id="voiceErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="voiceErrMsg"></div></div>
+      </div>
+      <div class="right-panel">
+        <div style="width:315px;background:var(--s2);border:1.5px solid var(--bd);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;flex-shrink:0;">
+          <div style="text-align:center;color:var(--tdim);font-size:32px;">🎵</div>
+          <audio id="voiceAudio" controls style="width:100%;"></audio>
+        </div>
+        <div class="prev-lbl">PREVIEW</div>
+        <div class="result-btns" id="voiceResultBtns" style="margin-top:12px;">
+          <a class="dl-btn" id="voiceDlBtn" href="#" download="voice.mp3">⬇ Download Audio</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEAD SPACE REMOVER TAB -->
+  <div class="tab-panel" id="tab-deadspace">
+    <div class="workspace">
+      <div class="left-panel">
+        <div class="sec-lbl">Video File</div>
+        <div class="upload-zone" id="dsUploadZone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="event.preventDefault();this.classList.remove('drag');handleDSFile(event.dataTransfer.files)">
+          <span class="up-icon">📹</span><div class="up-title">Upload Video</div><div class="up-hint">MP4 or WebM · Max 500MB</div>
+          <input type="file" id="dsFileInput" accept="video/*" style="display:none" onchange="handleDSFile(this.files)"><div id="dsFileName" class="up-name"></div>
+        </div>
+        <div class="sec-lbl" style="margin-top:12px;">Removal Settings</div>
+        <div class="setting-row">
+          <label class="setting-label">Silence Detection</label>
+          <select class="select" id="dsStrength">
+            <option value="light">Light (keeps more)</option>
+            <option value="medium" selected>Medium (balanced)</option>
+            <option value="strong">Strong (aggressive)</option>
+          </select>
+        </div>
+        <div class="info-box" style="margin-top:8px;"><b>Pro Tip:</b> Best for vlogs, talking-head videos, and podcasts. Removes long pauses and filler sounds.</div>
+        <button class="btn" onclick="startDeadspace()">🎬 Remove Dead Space</button>
+        <div id="dsLoading" class="prog-wrap"><div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border:2px solid var(--bd);border-top-color:var(--y);border-radius:50%;animation:autoSpin .7s linear infinite;"></div><span id="dsLoadingText">Processing...</span></div></div>
+      </div>
+      <div class="right-panel">
+        <div class="prev-lbl">Preview</div>
+        <div class="phone-wrap"><div class="ph-empty"><span>⏱️</span><p>Processed video will appear here</p></div><video id="dsPreview" class="ph-video"></video></div>
+        <div class="result-btns" id="dsResultBtns"><a class="dl-btn" id="dsDownloadBtn" href="#" download>⬇ Download Video</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YT SCRAPER TAB -->
+  <div class="tab-panel" id="tab-scraper">
+    <div class="workspace">
+      <div class="left-panel">
+        <div class="sec-lbl">Channel URL</div>
+        <input type="text" class="text-input" id="channelUrl" placeholder="@yourchannelname or full YouTube URL">
+        <div class="sec-lbl" style="margin-top:12px;">Scrape Settings</div>
+        <div class="setting-row">
+          <label class="setting-label">Videos to Fetch</label>
+          <select class="select" id="videoCount">
+            <option value="10">10 videos</option>
+            <option value="25" selected>25 videos</option>
+            <option value="50">50 videos</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Sort By</label>
+          <select class="select" id="sortBy">
+            <option value="newest" selected>Newest First</option>
+            <option value="popular">Most Popular</option>
+            <option value="trending">Trending (90d)</option>
+          </select>
+        </div>
+        <button class="btn" onclick="startScraper()">🎥 Scrape Channel</button>
+        <div id="scraperLoading" class="prog-wrap"><div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border:2px solid var(--bd);border-top-color:var(--y);border-radius:50%;animation:autoSpin .7s linear infinite;"></div><span id="scraperLoadingText">Scraping...</span></div></div>
+      </div>
+      <div class="right-panel">
+        <div class="sec-lbl">Results</div>
+        <div id="scraperResults" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;width:100%;max-width:600px;">
+          <div style="color:var(--tdim);text-align:center;padding:20px;">No data yet</div>
+        </div>
+        <div class="result-btns" id="scraperResultBtns" style="max-width:600px;"><button class="dl-btn" onclick="downloadScraperJSON()" style="background:var(--y);color:var(--blk);">⬇ Export as JSON</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTOMATION TAB -->
   <div class="tab-panel" id="tab-automation">
     <div style="display:flex;height:100%;overflow:hidden;">
-
       <!-- STEPS SIDEBAR -->
       <div style="width:200px;flex-shrink:0;border-right:1px solid var(--bd);background:var(--s1);padding:12px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;">
         <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--tmut);padding:0 8px;margin-bottom:8px;">Pipeline</div>
@@ -217,26 +468,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
           <div style="font-size:9px;color:var(--tdim);margin-top:4px;font-family:'Space Mono',monospace;" id="aProgressLabel">0 / 5 steps</div>
         </div>
       </div>
-
       <!-- MAIN CONTENT -->
       <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;">
-
         <!-- STEP 1: IDEATION -->
         <div class="auto-step-panel active" id="auto-step-1">
           <div class="auto-step-header">
             <div class="auto-step-title">💡 Step 1 — Ideation</div>
             <div class="auto-step-desc">Upload up to 10 competitor channel JSON files from the YT Scraper. Claude analyzes patterns and generates 5 viral ideas. This is required to proceed.</div>
           </div>
-
-          <!-- File upload -->
           <div>
             <div class="sec-lbl">Competitor Channel Data <span style="color:var(--red);">*Required</span></div>
-            <div id="aChannelFilesZone"
-                 style="border:1.5px dashed var(--bd);border-radius:11px;padding:20px;text-align:center;cursor:pointer;background:var(--s1);transition:all .2s;"
-                 onclick="document.getElementById('aChannelFilesInput').click()"
-                 ondragover="event.preventDefault();this.style.borderColor='var(--y)';this.style.background='var(--yg)'"
-                 ondragleave="this.style.borderColor='var(--bd)';this.style.background='var(--s1)'"
-                 ondrop="event.preventDefault();this.style.borderColor='var(--bd)';this.style.background='var(--s1)';aLoadChannelFiles(event.dataTransfer.files)">
+            <div id="aChannelFilesZone" style="border:1.5px dashed var(--bd);border-radius:11px;padding:20px;text-align:center;cursor:pointer;background:var(--s1);transition:all .2s;" onclick="document.getElementById('aChannelFilesInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--y)';this.style.background='var(--yg)'" ondragleave="this.style.borderColor='var(--bd)';this.style.background='var(--s1)'" ondrop="event.preventDefault();this.style.borderColor='var(--bd)';this.style.background='var(--s1)';aLoadChannelFiles(event.dataTransfer.files)">
               <input type="file" id="aChannelFilesInput" accept=".json" multiple style="display:none" onchange="aLoadChannelFiles(this.files)">
               <span style="font-size:24px;display:block;margin-bottom:6px;">📁</span>
               <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Drop up to 10 JSON files here</div>
@@ -244,23 +486,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
             <div id="aChannelFilesList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
           </div>
-
-          <!-- Own idea -->
           <div>
             <div class="sec-lbl">Or Type Your Own Idea</div>
             <div style="display:flex;gap:8px;">
-              <input type="text" class="text-input" id="aOwnIdea"
-                     placeholder="e.g. What if you were raised by giraffes in the African savanna…"
-                     style="flex:1;"
-                     onkeydown="if(event.key==='Enter')aUseOwnIdea()">
+              <input type="text" class="text-input" id="aOwnIdea" placeholder="e.g. What if you were raised by giraffes in the African savanna…" style="flex:1;" onkeydown="if(event.key==='Enter')aUseOwnIdea()">
               <button onclick="aUseOwnIdea()" style="padding:10px 16px;background:var(--s3);border:1px solid var(--bd);border-radius:9px;color:var(--tdim);font-size:12px;font-weight:700;cursor:pointer;font-family:'Space Mono',monospace;white-space:nowrap;">↵ Use</button>
             </div>
             <div style="font-size:9px;color:var(--tmut);margin-top:4px;">Channel data must still be uploaded</div>
           </div>
-
           <button class="btn" id="aIdeationBtn" onclick="aRunIdeation()">💡 Generate 5 Viral Ideas</button>
           <div class="auto-loading" id="aIdeationLoading"><div class="auto-spinner"></div><span>Analyzing competitor data…</span></div>
-
           <div id="aIdeasOutput" style="display:none;">
             <div class="sec-lbl" style="margin-bottom:8px;">Choose Your Idea</div>
             <div id="aIdeasList" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -270,7 +505,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
           </div>
         </div>
-
         <!-- STEP 2: SCRIPT -->
         <div class="auto-step-panel" id="auto-step-2">
           <div class="auto-step-header">
@@ -295,27 +529,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
           </div>
         </div>
-
         <!-- STEP 3: SCENES -->
         <div class="auto-step-panel" id="auto-step-3">
           <div class="auto-step-header">
             <div class="auto-step-title">🎭 Step 3 — Scenes</div>
             <div class="auto-step-desc">Claude splits your script into scenes. Add reference video (optional) for pacing guidance.</div>
           </div>
-
-          <!-- Reference video (optional) -->
-          <div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:var(--tdim);margin-bottom:8px;">Reference Video <span style="color:var(--tmut);font-weight:400;">(optional)</span></div>
-            <div style="display:flex;gap:8px;">
-              <input type="text" class="text-input" id="aRefVideoUrl" placeholder="YouTube URL for pacing context…" style="flex:1;">
-              <button onclick="aAnalyseRefVideo()" style="padding:10px 14px;background:var(--s3);border:1px solid var(--bd);border-radius:9px;color:var(--tdim);font-size:11px;font-weight:700;cursor:pointer;font-family:'Space Mono',monospace;white-space:nowrap;">🔍 Analyse</button>
-            </div>
-            <div id="aRefVideoResult" style="margin-top:6px;font-size:10px;color:var(--grn);display:none;">✓ Scene pacing detected</div>
-          </div>
-
           <button class="btn" id="aScenesBtn" onclick="aGenerateScenes()">🎭 Auto-Split into Scenes</button>
           <div class="auto-loading" id="aScenesLoading"><div class="auto-spinner"></div><span>Splitting script into scenes…</span></div>
-
           <div id="aScenesOutput" style="display:none;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div class="sec-lbl">Scenes <span id="aSceneCount" style="color:var(--y);"></span></div>
@@ -327,29 +548,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
               <div style="font-size:10px;color:var(--tdim);">Creates image &amp; video prompts</div>
             </div>
           </div>
-
           <div class="auto-loading" id="aPromptsLoading" style="margin-top:8px;"><div class="auto-spinner"></div><span id="aPromptsLoadingTxt">Generating prompts…</span></div>
         </div>
-
         <!-- STEP 4: SCENE IMAGES -->
         <div class="auto-step-panel" id="auto-step-4">
           <div class="auto-step-header">
             <div class="auto-step-title">🎨 Step 4 — Scene Images</div>
             <div class="auto-step-desc">Generate reference images for each scene using Nano Banana Pro. Edit prompts by clicking them.</div>
           </div>
-
-          <!-- Top controls -->
           <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px;">
-            <!-- Ref image -->
-            <div>
-              <div style="font-size:10px;color:var(--tdim);margin-bottom:4px;">Reference Image <span style="color:var(--tmut);">(optional)</span></div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <div style="width:44px;height:44px;border-radius:6px;background:var(--s3);border:1px solid var(--bd);overflow:hidden;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;" onclick="document.getElementById('aSceneRefImgInput').click()" id="aSceneRefImgThumb">🦴</div>
-                <input type="file" id="aSceneRefImgInput" accept="image/*" style="display:none" onchange="aLoadSceneRefImg(this.files[0])">
-                <div style="font-size:10px;color:var(--tdim);" id="aSceneRefImgName">Upload</div>
-              </div>
-            </div>
-            <!-- Model selector -->
             <div style="flex:1;min-width:140px;">
               <div style="font-size:10px;color:var(--tdim);margin-bottom:4px;">Model (All)</div>
               <select class="select" id="aSceneImgModelAll" style="font-size:11px;padding:8px;">
@@ -359,13 +566,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
             <button class="btn" id="aGenAllImgsBtn" onclick="aGenerateAllSceneImages()" style="max-width:180px;padding:10px;">🎨 Generate All</button>
           </div>
-
-          <!-- 4-per-row image grid -->
           <div id="aSceneImgsGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
-
           <button class="btn" onclick="aConfirmSceneImages()" style="max-width:200px;">✓ Continue to Clips</button>
-
-          <!-- Prompt edit modal -->
           <div id="aPromptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center;">
             <div style="background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:20px;width:600px;max-width:95vw;display:flex;flex-direction:column;gap:12px;">
               <div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--y);" id="aPromptModalTitle">Prompt</div>
@@ -377,15 +579,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
           </div>
         </div>
-
         <!-- STEP 5: GENERATE CLIPS -->
         <div class="auto-step-panel" id="auto-step-5">
           <div class="auto-step-header">
             <div class="auto-step-title">⚡ Step 5 — Generate Clips</div>
             <div class="auto-step-desc">Generate video clips for each scene. Aspect ratio fixed at 9:16. Edit video prompts by clicking them.</div>
           </div>
-
-          <!-- Top controls -->
           <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px;">
             <div style="flex:1;min-width:160px;">
               <div style="font-size:10px;color:var(--tdim);margin-bottom:4px;">Model (All Clips)</div>
@@ -399,53 +598,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             <div style="padding:8px 12px;background:var(--s3);border:1px solid var(--bd);border-radius:7px;font-size:10px;color:var(--tdim);font-family:'Space Mono',monospace;flex-shrink:0;">📐 9:16 Fixed</div>
             <button class="btn" id="aGenAllClipsBtn" onclick="aGenerateAllClips()" style="max-width:200px;padding:10px;">⚡ Generate All Clips</button>
           </div>
-
           <div id="aClipsGrid" style="display:flex;flex-direction:column;gap:10px;"></div>
         </div>
-
-      </div><!-- end main content -->
-    </div><!-- end flex row -->
-  </div><!-- end tab-automation -->
-
-  <!-- STUB FOR OTHER TABS (simplified) -->
-  <div style="display:none;">
-    <!-- Other tabs like vidgen, imggen, etc. would go here -->
+      </div>
+    </div>
   </div>
 
 </div>
 
 <script>
-// ─── Automation State ───────────────────────────────────────────────────────
-const aState = {
-  channelData: [],
-  selectedIdea: null,
-  script: null,
-  scenes: [],
-  sceneImgPrompts: [],
-  sceneVideoPrompts: [],
-  sceneImages: [],
-  sceneRefImageFile: null,
-  sceneRefImageB64: null,
-  clips: [],
-  completedSteps: new Set(),
-};
-let aPromptModalIdx = -1, aPromptModalType = 'img';
-
-// ─── Navigation ───────────────────────────────────────────────────────────
+// ─── Tab Navigation ───────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   const tabEl = document.getElementById('tab-' + tab);
-  if (tabEl) {
-    tabEl.classList.add('active');
-  }
+  if (tabEl) tabEl.classList.add('active');
   const navEl = document.getElementById('nav-' + tab);
-  if (navEl) {
-    navEl.classList.add('active');
-  }
+  if (navEl) navEl.classList.add('active');
   const titles = { vidgen:'AI Video Gen', imggen:'AI Image Gen', voicegen:'Voice Gen', deadspace:'Dead Space Remover', scraper:'YT Scraper', automation:'Automation Pipeline' };
   document.getElementById('topTitle').textContent = titles[tab] || 'DubShorts';
 }
+
+// ─── Automation Functions ────────────────────────────────────────────────
+const aState = { channelData: [], selectedIdea: null, script: null, scenes: [], sceneImgPrompts: [], sceneVideoPrompts: [], sceneImages: [], clips: [], completedSteps: new Set() };
+let aPromptModalIdx = -1, aPromptModalType = 'img';
 
 function autoGotoStep(n) {
   document.querySelectorAll('.auto-step-panel').forEach(p => p.classList.remove('active'));
@@ -459,11 +635,7 @@ function autoGotoStep(n) {
 function aMarkStepDone(n) {
   aState.completedSteps.add(n);
   const btn = document.getElementById('astep-btn-' + n);
-  if (btn) {
-    btn.classList.add('done');
-    const check = document.getElementById('astep-check-' + n);
-    if (check) check.textContent = '✓';
-  }
+  if (btn) { btn.classList.add('done'); const check = document.getElementById('astep-check-' + n); if (check) check.textContent = '✓'; }
   const d = aState.completedSteps.size;
   const prog = document.getElementById('aPipelineProgress');
   if (prog) prog.style.width = (d / 5 * 100) + '%';
@@ -471,12 +643,10 @@ function aMarkStepDone(n) {
   if (lbl) lbl.textContent = d + ' / 5 steps';
 }
 
-// ─── STEP 1: IDEATION ───────────────────────────────────────────────────────
+// ─── STEP 1: IDEATION ────────────────────────────────────────────────────
 function aLoadChannelFiles(files) {
   const list = document.getElementById('aChannelFilesList');
-  const zone = document.getElementById('aChannelFilesZone');
-  const remaining = 10 - aState.channelData.length;
-  Array.from(files).slice(0, remaining).forEach(f => {
+  Array.from(files).slice(0, 10 - aState.channelData.length).forEach(f => {
     const r = new FileReader();
     r.onload = e => {
       try {
@@ -487,10 +657,7 @@ function aLoadChannelFiles(files) {
         el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:7px;font-size:11px;';
         el.innerHTML = `<span style="color:var(--grn);">✓</span><span style="flex:1;color:var(--tx);">${f.name}</span><span style="color:var(--tdim);">${videos.length} videos</span>`;
         list.appendChild(el);
-        if (aState.channelData.length >= 1) zone.style.borderColor = 'rgba(46,204,113,.4)';
-      } catch(err) {
-        alert('Invalid JSON: ' + f.name);
-      }
+      } catch(err) { alert('Invalid JSON: ' + f.name); }
     };
     r.readAsText(f);
   });
@@ -508,40 +675,21 @@ function aUseOwnIdea() {
 
 async function aRunIdeation() {
   if (aState.channelData.length === 0) { alert('Please upload at least one competitor channel JSON file.'); return; }
-
   const btn = document.getElementById('aIdeationBtn');
   btn.disabled = true;
   const loading = document.getElementById('aIdeationLoading');
   if (loading) loading.classList.add('vis');
-
   try {
     const allVids = aState.channelData.flatMap(c => c.videos);
     const top20 = [...allVids].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 20);
-    const dataStr = top20.map(v =>
-      `- "${v.title}" (${((v.view_count || 0) / 1e6).toFixed(1)}M views)`
-    ).join('\n');
-
-    const prompt = `You are a viral short-form video strategist.
-
-Top competitor videos:
-${dataStr}
-
-Generate EXACTLY 5 viral ideas. Use proven formats but SWAP key elements:
-- "What if you brought a PS5 to Ancient Rome" → change PS5 to iPhone, Rome to Egypt
-- "Modern Doctor vs Ancient Civilization" → swap Doctor with Athlete, swap Rome with Greece
-
-Return ONLY JSON:
-[{"title":"...","format":"format name","twist":"what you swapped","why":"why viral now","emotion":"core emotion"}]`;
-
+    const dataStr = top20.map(v => `- "${v.title}" (${((v.view_count || 0) / 1e6).toFixed(1)}M views)`).join('\n');
+    const prompt = `You are a viral short-form video strategist. Top competitor videos:\n${dataStr}\n\nGenerate EXACTLY 5 viral ideas. Return ONLY JSON:\n[{"title":"...","format":"...","twist":"...","why":"...","emotion":"..."}]`;
     const r = await fetch('/api/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, max_tokens: 1500 }) });
     const d = await r.json();
     const text = d.content?.[0]?.text || '';
     const ideas = JSON.parse(text.replace(/```json|```/g, '').trim());
     aRenderIdeas(ideas);
-  } catch(err) {
-    alert('Error: ' + err.message);
-  }
-
+  } catch(err) { alert('Error: ' + err.message); }
   btn.disabled = false;
   if (loading) loading.classList.remove('vis');
 }
@@ -552,21 +700,11 @@ function aRenderIdeas(ideas) {
   ideas.forEach((idea, i) => {
     const card = document.createElement('div');
     card.className = 'idea-card';
-    card.innerHTML = `<div class="idea-title">${i + 1}. ${idea.title}</div>
-      <div class="idea-why">${idea.why}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-        <span style="font-size:9px;padding:2px 6px;background:var(--s4);border-radius:3px;color:var(--tdim);">📋 ${idea.format}</span>
-        <span style="font-size:9px;padding:2px 6px;background:rgba(167,139,250,.1);border-radius:3px;color:var(--pur);">✨ ${idea.twist}</span>
-      </div>`;
-    card.onclick = () => {
-      document.querySelectorAll('.idea-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      aState.selectedIdea = idea.title;
-    };
+    card.innerHTML = `<div class="idea-title">${i + 1}. ${idea.title}</div><div class="idea-why">${idea.why}</div>`;
+    card.onclick = () => { document.querySelectorAll('.idea-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected'); aState.selectedIdea = idea.title; };
     list.appendChild(card);
   });
-  const output = document.getElementById('aIdeasOutput');
-  if (output) output.style.display = 'block';
+  document.getElementById('aIdeasOutput').style.display = 'block';
 }
 
 function aConfirmIdea() {
@@ -576,50 +714,29 @@ function aConfirmIdea() {
   autoGotoStep(2);
 }
 
-// ─── STEP 2: SCRIPT ───────────────────────────────────────────────────────
+// ─── STEP 2: SCRIPT ─────────────────────────────────────────────────────
 async function aGenerateScript() {
   if (!aState.selectedIdea) { alert('Complete Step 1 first.'); return; }
-
   const btn = document.getElementById('aScriptBtn');
   btn.disabled = true;
   const loading = document.getElementById('aScriptLoading');
   if (loading) loading.classList.add('vis');
-
   try {
     const allVids = aState.channelData.flatMap(c => c.videos);
     const top10 = [...allVids].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 10);
     const avgDur = Math.round(top10.reduce((a, v) => a + (v.duration_seconds || 60), 0) / Math.max(top10.length, 1));
-
-    const prompt = `Based on the competitor channel data, generate a viral script for this idea: "${aState.selectedIdea}"
-
-Make it ${avgDur} seconds long. Match the energy and style of viral short-form videos. Start with a scroll-stopping hook in the first 3 seconds.
-
-Rules:
-- ONLY the spoken words — no stage directions
-- Natural, conversational language
-- Great when spoken aloud
-- End with satisfying payoff
-
-Write the script:`;
-
+    const prompt = `Generate a viral script for: "${aState.selectedIdea}". Make it ${avgDur} seconds long. ONLY the spoken words — no stage directions.`;
     const r = await fetch('/api/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, max_tokens: 1000 }) });
     const d = await r.json();
     const script = d.content?.[0]?.text || '';
-    
-    const textArea = document.getElementById('aFinalScript');
-    if (textArea) textArea.value = script;
-    
+    const ta = document.getElementById('aFinalScript');
+    if (ta) ta.value = script;
     const words = script.split(/\s+/).length;
-    const wordCountEl = document.getElementById('aScriptWordCount');
-    if (wordCountEl) wordCountEl.textContent = `~${words} words · ~${Math.round(words / 2.5)} seconds`;
-    
-    const output = document.getElementById('aScriptOutput');
-    if (output) output.style.display = 'block';
+    const wc = document.getElementById('aScriptWordCount');
+    if (wc) wc.textContent = `~${words} words · ~${Math.round(words / 2.5)} seconds`;
+    document.getElementById('aScriptOutput').style.display = 'block';
     aState.script = script;
-  } catch(err) {
-    alert('Error: ' + err.message);
-  }
-
+  } catch(err) { alert('Error: ' + err.message); }
   btn.disabled = false;
   if (loading) loading.classList.remove('vis');
 }
@@ -632,60 +749,23 @@ function aConfirmScript() {
   autoGotoStep(3);
 }
 
-// ─── STEP 3: SCENES ───────────────────────────────────────────────────────
-async function aAnalyseRefVideo() {
-  const url = document.getElementById('aRefVideoUrl').value.trim();
-  if (!url) return;
-  try {
-    const r = await fetch('/api/claude', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: `Analyse this video for scene pacing: ${url}. Return JSON: [{"scene":1,"duration":5}]`, max_tokens: 600 })
-    });
-    const d = await r.json();
-    aState.refVideoStructure = JSON.parse((d.content?.[0]?.text || '').replace(/```json|```/g, '').trim());
-    const result = document.getElementById('aRefVideoResult');
-    if (result) result.style.display = 'block';
-  } catch(e) {
-    const result = document.getElementById('aRefVideoResult');
-    if (result) result.style.display = 'none';
-  }
-}
-
+// ─── STEP 3: SCENES ─────────────────────────────────────────────────────
 async function aGenerateScenes() {
   if (!aState.script) { alert('Complete Step 2 first.'); return; }
-
   const btn = document.getElementById('aScenesBtn');
   btn.disabled = true;
   const loading = document.getElementById('aScenesLoading');
   if (loading) loading.classList.add('vis');
-
   try {
-    const prompt = `Split this script into scenes for YouTube Shorts (9:16):
-
-"${aState.script}"
-
-Rules:
-- 8-14 scenes total
-- Each scene = ONE distinct visual (split logically: "skin clears" is one scene, "brain fog clears" is a SEPARATE scene)
-- Extract EXACT spoken words for each scene
-- Skip the first hook sentence
-- Estimate duration in seconds
-
-Return ONLY JSON:
-[{"scene":1,"script_lines":"exact words","duration_seconds":5}]`;
-
+    const prompt = `Split this script into 8-14 scenes:\n"${aState.script}"\n\nReturn ONLY JSON:\n[{"scene":1,"script_lines":"...","duration_seconds":5}]`;
     const r = await fetch('/api/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, max_tokens: 2500 }) });
     const d = await r.json();
     aState.scenes = JSON.parse((d.content?.[0]?.text || '').replace(/```json|```/g, '').trim());
     aState.sceneImgPrompts = aState.scenes.map(() => '');
     aState.sceneVideoPrompts = aState.scenes.map(() => '');
     aRenderScenesList();
-    const output = document.getElementById('aScenesOutput');
-    if (output) output.style.display = 'block';
-  } catch(err) {
-    alert('Error: ' + err.message);
-  }
-
+    document.getElementById('aScenesOutput').style.display = 'block';
+  } catch(err) { alert('Error: ' + err.message); }
   btn.disabled = false;
   if (loading) loading.classList.remove('vis');
 }
@@ -695,16 +775,10 @@ function aRenderScenesList() {
   list.innerHTML = '';
   const count = document.getElementById('aSceneCount');
   if (count) count.textContent = `(${aState.scenes.length})`;
-  
   aState.scenes.forEach((s, i) => {
     const card = document.createElement('div');
-    card.style.cssText = 'background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:8px;';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:9px;color:var(--y);font-family:'Space Mono',monospace;">SCENE ${s.scene} · ~${s.duration_seconds}s</div>
-        <button onclick="aDeleteScene(${i})" style="background:none;border:none;color:var(--tmut);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:4px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--tmut)'">✕</button>
-      </div>
-      <textarea class="textarea" rows="2" style="font-size:11px;" onchange="aState.scenes[${i}].script_lines=this.value">${s.script_lines}</textarea>`;
+    card.style.cssText = 'background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:12px;';
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;"><div style="font-size:9px;color:var(--y);">SCENE ${s.scene} · ~${s.duration_seconds}s</div><button onclick="aDeleteScene(${i})" style="background:none;border:none;color:var(--tmut);cursor:pointer;">✕</button></div><textarea class="textarea" rows="2" onchange="aState.scenes[${i}].script_lines=this.value">${s.script_lines}</textarea>`;
     list.appendChild(card);
   });
 }
@@ -727,76 +801,24 @@ function aAddScene() {
 
 async function aConfirmScenes() {
   if (aState.scenes.length === 0) { alert('Add at least one scene.'); return; }
-
-  // Sync edits from textareas
-  document.querySelectorAll('#aScenesList textarea').forEach((ta, i) => {
-    if (aState.scenes[i]) aState.scenes[i].script_lines = ta.value;
-  });
-
-  const btn = document.querySelector('#auto-step-3 .btn');
-  if (btn) btn.disabled = true;
+  document.querySelectorAll('#aScenesList textarea').forEach((ta, i) => { if (aState.scenes[i]) aState.scenes[i].script_lines = ta.value; });
   const loading = document.getElementById('aPromptsLoading');
   if (loading) loading.classList.add('vis');
-
   try {
     const sceneList = aState.scenes.map(s => `Scene ${s.scene}: "${s.script_lines}"`).join('\n');
-
-    // Generate both image and video prompts together
-    const prompt = `You are an expert prompt writer for AI video generation.
-
-Script scenes:
-${sceneList}
-
-Generate image prompts for EACH scene with this structure at the start of EVERY image prompt:
-"Keep the skeleton the exact same as the reference image (with the white body and clear skin) make the skeleton the size of a normal human compared to the environment..."
-
-Then generate video prompts for EACH scene starting with:
-"Keep the bone character the exact same (with white body and clear skin), and no dialogue, no music. Don't make the bone character walk with its hips shaking..."
-
-Return ONLY JSON:
-[{"scene":1,"image_prompt":"...","video_prompt":"..."}]`;
-
-    if (loading) {
-      const txt = document.getElementById('aPromptsLoadingTxt');
-      if (txt) txt.textContent = 'Generating image and video prompts…';
-    }
-
+    const prompt = `Generate image and video prompts for each scene:\n${sceneList}\n\nReturn ONLY JSON:\n[{"scene":1,"image_prompt":"...","video_prompt":"..."}]`;
     const r = await fetch('/api/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, max_tokens: 6000 }) });
     const d = await r.json();
     const prompts = JSON.parse((d.content?.[0]?.text || '').replace(/```json|```/g, '').trim());
-    
-    prompts.forEach((p, i) => {
-      if (aState.sceneImgPrompts[i] !== undefined) aState.sceneImgPrompts[i] = p.image_prompt;
-      if (aState.sceneVideoPrompts[i] !== undefined) aState.sceneVideoPrompts[i] = p.video_prompt;
-    });
-
-  } catch(e) {
-    console.error('Prompt gen error:', e);
-    alert('Error generating prompts: ' + e.message);
-  }
-
+    prompts.forEach((p, i) => { if (aState.sceneImgPrompts[i]) aState.sceneImgPrompts[i] = p.image_prompt; if (aState.sceneVideoPrompts[i]) aState.sceneVideoPrompts[i] = p.video_prompt; });
+  } catch(e) { console.error('Prompt gen error:', e); }
   if (loading) loading.classList.remove('vis');
-  if (btn) btn.disabled = false;
   aMarkStepDone(3);
   autoGotoStep(4);
   aRenderSceneImgsGrid();
 }
 
-// ─── STEP 4: SCENE IMAGES ───────────────────────────────────────────────────
-function aLoadSceneRefImg(f) {
-  if (!f) return;
-  aState.sceneRefImageFile = f;
-  const r = new FileReader();
-  r.onload = e => {
-    aState.sceneRefImageB64 = e.target.result.split(',')[1];
-    const thumb = document.getElementById('aSceneRefImgThumb');
-    if (thumb) thumb.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-    const name = document.getElementById('aSceneRefImgName');
-    if (name) name.textContent = f.name;
-  };
-  r.readAsDataURL(f);
-}
-
+// ─── STEP 4: SCENE IMAGES ────────────────────────────────────────────────
 function aRenderSceneImgsGrid() {
   const grid = document.getElementById('aSceneImgsGrid');
   grid.innerHTML = '';
@@ -805,19 +827,7 @@ function aRenderSceneImgsGrid() {
     col.className = 'aSceneImgCol';
     const prompt = aState.sceneImgPrompts[i] || '';
     const imgSrc = aState.sceneImages[i];
-    col.innerHTML = `
-      <div class="aSceneImgBox" id="aImgBox-${i}">
-        ${imgSrc ? `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;">` : '<div class="aSceneImgEmpty">📷</div>'}
-      </div>
-      <div style="font-size:9px;color:var(--y);font-family:'Space Mono',monospace;text-align:center;">Scene ${scene.scene}</div>
-      <button class="aPromptBtn" onclick="aOpenPromptModal(${i},'img')" id="aImgPromptBtn-${i}">${prompt ? prompt.slice(0, 40) + '…' : '📝 Edit'}</button>
-      <div style="display:flex;gap:4px;">
-        <select class="select" id="aImgModel-${i}" style="font-size:10px;padding:5px;flex:1;">
-          <option value="nano-banana-pro" selected>Pro</option>
-          <option value="nano-banana-2">Nano 2</option>
-        </select>
-        <button onclick="aGenSingleImage(${i})" style="padding:5px 8px;background:var(--y);border:none;border-radius:6px;color:#000;font-size:10px;font-weight:700;cursor:pointer;font-family:'Space Mono',monospace;white-space:nowrap;">Gen</button>
-      </div>`;
+    col.innerHTML = `<div class="aSceneImgBox" id="aImgBox-${i}">${imgSrc ? `<img src="${imgSrc}">` : '<div class="aSceneImgEmpty">📷</div>'}</div><div style="font-size:9px;color:var(--y);text-align:center;">Scene ${scene.scene}</div><button class="aPromptBtn" onclick="aOpenPromptModal(${i},'img')" id="aImgPromptBtn-${i}">${prompt ? prompt.slice(0, 40) + '…' : '📝 Edit'}</button><div style="display:flex;gap:4px;"><select class="select" id="aImgModel-${i}" style="font-size:10px;flex:1;"><option value="nano-banana-pro" selected>Pro</option></select><button onclick="aGenSingleImage(${i})" style="padding:5px 8px;background:var(--y);border:none;border-radius:6px;color:#000;font-size:10px;font-weight:700;cursor:pointer;">Gen</button></div>`;
     grid.appendChild(col);
   });
 }
@@ -827,17 +837,13 @@ function aOpenPromptModal(idx, type) {
   aPromptModalType = type;
   const p = type === 'img' ? aState.sceneImgPrompts[idx] : aState.sceneVideoPrompts[idx];
   const title = document.getElementById('aPromptModalTitle');
-  if (title) title.textContent = (type === 'img' ? '🎨 Image' : '🎬 Video') + ' Prompt — Scene ' + (idx + 1);
+  if (title) title.textContent = (type === 'img' ? '🎨 Image' : '🎬 Video') + ' Prompt';
   const textarea = document.getElementById('aPromptModalText');
   if (textarea) textarea.value = p || '';
-  const modal = document.getElementById('aPromptModal');
-  if (modal) modal.style.display = 'flex';
+  document.getElementById('aPromptModal').style.display = 'flex';
 }
 
-function aClosePromptModal() {
-  const modal = document.getElementById('aPromptModal');
-  if (modal) modal.style.display = 'none';
-}
+function aClosePromptModal() { document.getElementById('aPromptModal').style.display = 'none'; }
 
 function aSavePromptModal() {
   const val = document.getElementById('aPromptModalText').value;
@@ -847,61 +853,37 @@ function aSavePromptModal() {
     if (btn) btn.textContent = val.slice(0, 40) + '…';
   } else {
     aState.sceneVideoPrompts[aPromptModalIdx] = val;
-    const btn = document.getElementById('aVidPromptBtn-' + aPromptModalIdx);
-    if (btn) btn.textContent = val.slice(0, 60) + '…';
   }
   aClosePromptModal();
 }
 
 async function aGenSingleImage(i) {
-  const model = document.getElementById('aImgModel-' + i)?.value || document.getElementById('aSceneImgModelAll').value;
+  const model = 'nano-banana-pro';
   const prompt = aState.sceneImgPrompts[i];
-  if (!prompt) { alert('No prompt for scene ' + (i + 1)); return; }
-  await _aGenSceneImg(i, model, prompt);
-}
-
-async function aGenerateAllSceneImages() {
-  const model = document.getElementById('aSceneImgModelAll').value;
-  const btn = document.getElementById('aGenAllImgsBtn');
-  if (btn) btn.disabled = true;
-  
-  for (let i = 0; i < aState.scenes.length; i++) {
-    if (btn) btn.textContent = `⏳ Scene ${i + 1}/${aState.scenes.length}…`;
-    await _aGenSceneImg(i, model, aState.sceneImgPrompts[i]);
-  }
-  
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = '🎨 Generate All';
-  }
-}
-
-async function _aGenSceneImg(i, model, prompt) {
+  if (!prompt) { alert('No prompt'); return; }
   const box = document.getElementById('aImgBox-' + i);
-  if (!box) return;
-  box.innerHTML = '<div class="aSceneImgEmpty"><div class="auto-spinner" style="width:24px;height:24px;border-width:3px;"></div></div>';
-  
+  if (box) box.innerHTML = '<div class="aSceneImgEmpty"><div style="border:2px solid var(--bd);border-top-color:var(--y);border-radius:50%;width:20px;height:20px;animation:autoSpin .7s linear infinite;"></div></div>';
   try {
     const fd = new FormData();
     fd.append('model', model);
     fd.append('prompt', prompt);
     fd.append('aspectRatio', '9:16');
     fd.append('resolution', '1K');
-    fd.append('format', 'PNG');
-    if (aState.sceneRefImageFile) fd.append('refImage', aState.sceneRefImageFile);
-    
     const r = await fetch('/generate-image', { method: 'POST', body: fd });
     const d = await r.json();
-    
-    if (d.success) {
-      aState.sceneImages[i] = d.imageUrl;
-      box.innerHTML = `<img src="${d.imageUrl}" style="width:100%;height:100%;object-fit:cover;">`;
-    } else {
-      box.innerHTML = `<div class="aSceneImgEmpty" style="font-size:9px;color:var(--red);padding:8px;text-align:center;">✗ ${d.error}</div>`;
-    }
-  } catch(e) {
-    box.innerHTML = '<div class="aSceneImgEmpty" style="font-size:9px;color:var(--red);">Error</div>';
+    if (d.success) { aState.sceneImages[i] = d.imageUrl; box.innerHTML = `<img src="${d.imageUrl}" style="width:100%;height:100%;object-fit:cover;">`; }
+    else box.innerHTML = '<div class="aSceneImgEmpty" style="color:var(--red);font-size:9px;">✗ Error</div>';
+  } catch(e) { box.innerHTML = '<div class="aSceneImgEmpty" style="color:var(--red);">Error</div>'; }
+}
+
+async function aGenerateAllSceneImages() {
+  const btn = document.getElementById('aGenAllImgsBtn');
+  if (btn) btn.disabled = true;
+  for (let i = 0; i < aState.scenes.length; i++) {
+    if (btn) btn.textContent = `⏳ Scene ${i + 1}/${aState.scenes.length}…`;
+    await aGenSingleImage(i);
   }
+  if (btn) { btn.disabled = false; btn.textContent = '🎨 Generate All'; }
 }
 
 function aConfirmSceneImages() {
@@ -910,48 +892,21 @@ function aConfirmSceneImages() {
   aRenderClipsGrid();
 }
 
-// ─── STEP 5: CLIPS ────────────────────────────────────────────────────────
+// ─── STEP 5: CLIPS ─────────────────────────────────────────────────────
 function aSyncClipModels() {
   const model = document.getElementById('aClipModelAll').value;
-  aState.scenes.forEach((_, i) => {
-    const s = document.getElementById('aClipModel-' + i);
-    if (s) s.value = model;
-  });
+  aState.scenes.forEach((_, i) => { const s = document.getElementById('aClipModel-' + i); if (s) s.value = model; });
 }
 
 function aRenderClipsGrid() {
   const grid = document.getElementById('aClipsGrid');
   grid.innerHTML = '';
-  
   aState.scenes.forEach((scene, i) => {
     const imgSrc = aState.sceneImages[i];
     const vp = aState.sceneVideoPrompts[i] || '';
     const row = document.createElement('div');
     row.className = 'aClipRow';
-    row.id = 'aClipRow-' + i;
-    
-    row.innerHTML = `
-      <div style="flex-shrink:0;width:72px;">
-        ${imgSrc
-          ? `<img id="aClipImg-${i}" src="${imgSrc}" style="width:72px;height:128px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);">`
-          : `<div style="width:72px;height:128px;background:var(--s3);border-radius:6px;border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;color:var(--tmut);font-size:20px;">📷</div>`}
-      </div>
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
-        <div style="font-size:10px;font-weight:700;color:var(--y);font-family:'Space Mono',monospace;">Scene ${scene.scene} · ~${scene.duration_seconds}s</div>
-        <div style="font-size:10px;color:var(--tdim);line-height:1.4;">${scene.script_lines}</div>
-        <button class="aPromptBtn" onclick="aOpenPromptModal(${i},'vid')" id="aVidPromptBtn-${i}">${vp ? vp.slice(0, 60) + '…' : '🎬 Edit'}</button>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <select class="select" id="aClipModel-${i}" style="font-size:10px;padding:6px;flex:1;min-width:120px;">
-            <option value="grok-480p">Grok 480p — 15cr</option>
-            <option value="grok-720p" selected>Grok 720p — 30cr</option>
-            <option value="veo3-lite">Veo 3.1 Lite — 20cr</option>
-            <option value="sora2">Sora 2 — 20cr</option>
-          </select>
-          <button onclick="aGenSingleClip(${i})" style="padding:6px 14px;background:var(--y);border:none;border-radius:6px;color:#000;font-size:10px;font-weight:700;cursor:pointer;font-family:'Space Mono',monospace;white-space:nowrap;">⚡ Gen</button>
-        </div>
-        <div id="aClipStatus-${i}" style="font-size:10px;color:var(--tdim);font-family:'Space Mono',monospace;"></div>
-        <div id="aClipVideo-${i}"></div>
-      </div>`;
+    row.innerHTML = `<div style="flex-shrink:0;width:72px;">${imgSrc ? `<img src="${imgSrc}" style="width:72px;height:128px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);">` : `<div style="width:72px;height:128px;background:var(--s3);border-radius:6px;border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;color:var(--tmut);">📷</div>`}</div><div style="flex:1;display:flex;flex-direction:column;gap:8px;"><div style="font-size:10px;font-weight:700;color:var(--y);">Scene ${scene.scene} · ~${scene.duration_seconds}s</div><button class="aPromptBtn" onclick="aOpenPromptModal(${i},'vid')" id="aVidPromptBtn-${i}">${vp ? vp.slice(0, 40) + '…' : '🎬 Edit'}</button><div style="display:flex;gap:6px;"><select class="select" id="aClipModel-${i}" style="font-size:10px;flex:1;"><option value="grok-720p" selected>Grok 720p</option></select><button onclick="aGenSingleClip(${i})" style="padding:6px 14px;background:var(--y);border:none;border-radius:6px;color:#000;font-size:10px;cursor:pointer;">⚡ Gen</button></div><div id="aClipStatus-${i}" style="font-size:10px;color:var(--tdim);"></div></div>`;
     grid.appendChild(row);
   });
 }
@@ -959,65 +914,43 @@ function aRenderClipsGrid() {
 async function aGenerateAllClips() {
   const btn = document.getElementById('aGenAllClipsBtn');
   if (btn) btn.disabled = true;
-  
   for (let i = 0; i < aState.scenes.length; i++) {
     if (btn) btn.textContent = `⏳ Scene ${i + 1}/${aState.scenes.length}…`;
     await aGenSingleClip(i);
   }
-  
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = '⚡ Generate All Clips';
-  }
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Generate All Clips'; }
   aMarkStepDone(5);
 }
 
 async function aGenSingleClip(i) {
-  const modelRaw = document.getElementById('aClipModel-' + i)?.value || 'grok-720p';
-  const model = modelRaw.startsWith('grok') ? 'grok' : modelRaw;
-  const quality = modelRaw === 'grok-480p' ? '480p' : '720p';
-  const prompt = aState.sceneVideoPrompts[i] || aState.sceneImgPrompts[i] || 'Cinematic vertical motion';
-  const scene = aState.scenes[i];
-  const imgUrl = aState.sceneImages[i];
-  
+  const model = document.getElementById('aClipModel-' + i)?.value || 'grok-720p';
+  const prompt = aState.sceneVideoPrompts[i] || 'Cinematic motion';
   const statusEl = document.getElementById('aClipStatus-' + i);
-  const videoEl = document.getElementById('aClipVideo-' + i);
-  
   if (statusEl) statusEl.innerHTML = '<span style="color:var(--tdim);">⏳ Generating…</span>';
-  
   try {
     const fd = new FormData();
-    fd.append('model', model);
+    fd.append('model', model.startsWith('grok') ? 'grok' : model);
     fd.append('prompt', prompt);
-    fd.append('duration', String(Math.max(5, scene.duration_seconds || 5)));
+    fd.append('duration', String(aState.scenes[i].duration_seconds || 5));
     fd.append('aspectRatio', '9:16');
-    fd.append('quality', quality);
-    
-    if (imgUrl) {
-      try {
-        const ir = await fetch(imgUrl);
-        const b = await ir.blob();
-        fd.append('image', b, 'scene.jpg');
-      } catch(e) {}
-    }
-    
     const r = await fetch('/generate-video', { method: 'POST', body: fd });
     const d = await r.json();
-    
-    if (d.success) {
-      aState.clips[i] = d.videoUrl;
-      if (statusEl) statusEl.innerHTML = '<span style="color:var(--grn);">✓ Done</span>';
-      if (videoEl) videoEl.innerHTML = `<video controls src="${d.videoUrl}" style="width:100%;max-width:180px;border-radius:6px;margin-top:4px;"></video><br><a href="${d.videoUrl}" download="scene_${scene.scene}.mp4" style="font-size:9px;color:var(--yd);font-family:'Space Mono',monospace;">⬇ Download</a>`;
-    } else {
-      throw new Error(d.error);
-    }
-  } catch(err) {
-    if (statusEl) statusEl.innerHTML = `<span style="color:var(--red);">✗ ${err.message}</span>`;
-  }
+    if (d.success) { aState.clips[i] = d.videoUrl; if (statusEl) statusEl.innerHTML = '<span style="color:var(--grn);">✓ Done</span>'; }
+    else throw new Error(d.error);
+  } catch(err) { if (statusEl) statusEl.innerHTML = `<span style="color:var(--red);">✗ ${err.message}</span>`; }
 }
 
-// ─── INIT ───────────────────────────────────────────────────────────────
-switchTab('automation');
+// ─── Other stubs ────────────────────────────────────────────────────────
+function startVidGen() { alert('Video generation via UI coming soon'); }
+function startImgGen() { alert('Image generation via UI coming soon'); }
+function startVoiceGen() { alert('Voice generation via UI coming soon'); }
+function startDeadspace() { alert('Dead space removal via UI coming soon'); }
+function startScraper() { alert('Scraper via UI coming soon'); }
+function downloadScraperJSON() { alert('No data to download'); }
+function handleDSFile(files) { if (files[0]) document.getElementById('dsFileName').textContent = files[0].name; }
+
+// ─── Initialize ─────────────────────────────────────────────────────────
+switchTab('vidgen');
 </script>
 
 </body>
