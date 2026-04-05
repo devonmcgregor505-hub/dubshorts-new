@@ -1165,6 +1165,40 @@ renderVoiceDropdown();
 renderVoiceOutputs();
 document.getElementById('repTiktok').dispatchEvent(new Event('change'));
 document.getElementById('repInstagram').dispatchEvent(new Event('change'));
+
+function renderScrapedVideos(videos) {
+  const list = document.getElementById('scrapList');
+  if (!videos || videos.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No videos found</div>';
+    return;
+  }
+  list.innerHTML = videos.map((v, i) => `
+    <div style="padding:10px;border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start;">
+      <div style="font-size:10px;color:var(--tmut);font-family:'Space Mono',monospace;width:16px;flex-shrink:0;padding-top:2px;">${i+1}</div>
+      ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:56px;height:100px;object-fit:cover;border-radius:5px;flex-shrink:0;">` : ''}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${v.title}</div>
+        <div style="font-size:10px;color:var(--tdim);margin-bottom:2px;">👁 ${fmtNum(v.view_count||v.views)}${v.like_count ? ' · ❤️ ' + fmtNum(v.like_count) : ''}${v.comment_count ? ' · 💬 ' + fmtNum(v.comment_count) : ''}</div>
+        <div style="font-size:9px;color:var(--tmut);">${[v.publish_date?v.publish_date.slice(0,10):'', v.duration_human||v.duration].filter(x=>x&&x!=='NA').join(' · ')}</div>
+        ${v.url ? `<a href="${v.url}" target="_blank" style="font-size:9px;color:var(--yd);text-decoration:none;font-family:'Space Mono',monospace;">↗ Open</a>` : ''}
+      </div>
+    </div>
+  `).join('') + `<div style="padding:10px;text-align:right;"><button onclick="exportScrapeJSON()" style="background:var(--s3);border:1px solid var(--bd);border-radius:6px;color:var(--tdim);font-size:10px;padding:6px 10px;cursor:pointer;font-family:'Space Mono',monospace;">⬇ Export JSON</button></div>`;
+  window._lastScrapeData = videos;
+}
+
+function fmtNum(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function exportScrapeJSON() {
+  const blob = new Blob([JSON.stringify(window._lastScrapeData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'scraped_videos.json'; a.click();
+}
+
 </script>
 </body>
 </html>
