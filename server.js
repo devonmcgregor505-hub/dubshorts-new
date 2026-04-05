@@ -158,14 +158,32 @@ app.post('/generate-video', upload.single('image'), async (req, res) => {
       if (model === 'grok') {
         if (!KIE_KEY) throw new Error('KIE_API_KEY not configured in .env');
 
+        // Build Grok input — include image if provided
+        const grokInput = {
+          prompt: prompt || 'Cinematic motion',
+          aspect_ratio: aspectRatio,
+          duration: parseInt(duration),
+          resolution: quality,
+        };
+
+        // If image uploaded, serve it temporarily and pass URL to Kie.ai
+        let tempImgServed = null;
+        if (imagePath && fs.existsSync(imagePath)) {
+          const tempImgName = `temp_${timestamp}.jpg`;
+          const tempImgPath = path.resolve(`outputs/${tempImgName}`);
+          fs.copyFileSync(imagePath, tempImgPath);
+          tempImgServed = tempImgPath;
+          // Determine public base URL
+          const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+            : `http://localhost:${PORT}`;
+          grokInput.image_url = `${baseUrl}/outputs/${tempImgName}`;
+          console.log(`[grok] image_url=${grokInput.image_url}`);
+        }
+
         const submitRes = await axios.post('https://api.kie.ai/api/v1/jobs/createTask', {
           model: 'grok-imagine/text-to-video',
-          input: {
-            prompt: prompt || 'Cinematic motion',
-            aspect_ratio: aspectRatio,
-            duration: parseInt(duration),
-            resolution: quality,
-          },
+          input: grokInput,
         }, {
           headers: { 'Authorization': `Bearer ${KIE_KEY}`, 'Content-Type': 'application/json' },
           timeout: 60000,
