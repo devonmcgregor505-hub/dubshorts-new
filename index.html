@@ -30,6 +30,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
 .badge{margin-left:auto;font-size:8px;padding:2px 4px;border-radius:3px;font-weight:700;}
 .badge.live{background:rgba(46,204,113,.1);color:var(--grn);}
 .badge.new{background:rgba(245,225,50,.1);color:var(--yd);}
+.badge.hot{background:rgba(255,65,54,.1);color:var(--red);}
 .sf{padding:10px 13px;border-top:1px solid var(--bd);}
 .credits-display{font-size:11px;color:var(--y);font-weight:700;font-family:'Space Mono',monospace;}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;min-height:0;}
@@ -58,6 +59,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
 .btn{padding:12px;background:var(--y);color:var(--blk);border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Space Mono',monospace;transition:all .2s;width:100%;letter-spacing:.4px;}
 .btn:hover{background:#ffe600;box-shadow:0 4px 20px rgba(245,225,50,.2);}
 .btn:disabled{background:var(--s4);color:var(--tmut);cursor:not-allowed;box-shadow:none;}
+.btn-sm{padding:8px 12px;background:var(--y);color:var(--blk);border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Space Mono',monospace;transition:all .2s;letter-spacing:.3px;}
+.btn-sm:hover{background:#ffe600;}
+.btn-sm:disabled{background:var(--s4);color:var(--tmut);cursor:not-allowed;}
+.btn-ghost{padding:8px 12px;background:var(--s3);color:var(--tdim);border:1px solid var(--bd);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.btn-ghost:hover{border-color:rgba(245,225,50,.3);color:var(--tx);}
 .select{background:var(--s3);border:1px solid var(--bd);color:var(--tx);padding:10px 12px;border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;width:100%;transition:all .15s;}
 .select:hover{border-color:rgba(245,225,50,.3);}
 .select:focus{border-color:rgba(245,225,50,.5);}
@@ -102,15 +108,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
 .dl-btn:hover{background:#27ae60;}
 .info-box{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;font-size:11px;color:var(--tdim);line-height:1.8;}
 .info-box b{color:var(--tx);}
-
-/* Voice Gen specific */
+/* Voice */
 .voice-item{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--s3);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s;}
 .voice-item:hover{border-color:rgba(245,225,50,.2);background:var(--s4);}
 .voice-item.selected{border-color:rgba(245,225,50,.4);background:rgba(245,225,50,.04);}
 .voice-item-name{font-size:12px;font-weight:600;color:var(--tx);}
 .voice-item-tag{font-size:9px;color:var(--tdim);margin-top:2px;}
-.voice-del{background:none;border:none;color:var(--tmut);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;transition:all .15s;}
-.voice-del:hover{color:var(--red);background:rgba(255,65,54,.08);}
 .add-voice-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;background:var(--s3);border:1.5px dashed var(--bd);border-radius:8px;color:var(--tdim);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
 .add-voice-btn:hover{border-color:rgba(245,225,50,.3);color:var(--y);background:var(--yg);}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;}
@@ -119,6 +122,106 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
 .modal-btns{display:flex;gap:8px;}
 .modal-btn-cancel{flex:1;padding:10px;background:var(--s4);border:1px solid var(--bd);border-radius:8px;color:var(--tdim);font-size:12px;font-weight:700;font-family:'Space Mono',monospace;cursor:pointer;}
 .modal-btn-save{flex:1;padding:10px;background:var(--y);border:none;border-radius:8px;color:var(--blk);font-size:12px;font-weight:700;font-family:'Space Mono',monospace;cursor:pointer;}
+
+/* ═══ PIPELINE STYLES ═══ */
+.pipeline-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100%;}
+.pipeline-steps{display:flex;align-items:center;gap:0;padding:0 20px;border-bottom:1px solid var(--bd);flex-shrink:0;background:var(--s1);}
+.pipe-step{display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:11px;font-weight:600;color:var(--tmut);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.pipe-step:hover{color:var(--tdim);}
+.pipe-step.active{color:var(--y);border-bottom-color:var(--y);}
+.pipe-step.done{color:var(--grn);}
+.pipe-step.done .pipe-num{background:var(--grn);color:#000;}
+.pipe-step.locked{opacity:.4;cursor:not-allowed;}
+.pipe-num{width:18px;height:18px;border-radius:50%;background:var(--s4);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;flex-shrink:0;}
+.pipe-step.active .pipe-num{background:var(--y);color:var(--blk);}
+.pipe-arrow{color:var(--tmut);font-size:10px;margin:0 2px;}
+.pipe-content{flex:1;display:none;overflow:hidden;}
+.pipe-content.active{display:flex;height:100%;}
+
+/* Ideation */
+.idea-card{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;position:relative;}
+.idea-card:hover{border-color:rgba(245,225,50,.3);background:var(--s3);}
+.idea-card.selected{border-color:var(--y);background:rgba(245,225,50,.04);}
+.idea-card-num{font-size:9px;font-family:'Space Mono',monospace;color:var(--yd);font-weight:700;margin-bottom:5px;}
+.idea-card-text{font-size:13px;font-weight:500;color:var(--tx);line-height:1.5;}
+.idea-check{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;background:var(--y);color:var(--blk);font-size:11px;display:none;align-items:center;justify-content:center;font-weight:700;}
+.idea-card.selected .idea-check{display:flex;}
+
+/* Channel file chips */
+.channel-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.channel-chip{background:var(--s3);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font-size:10px;color:var(--tdim);display:flex;align-items:center;gap:4px;}
+.channel-chip-del{background:none;border:none;color:var(--tmut);cursor:pointer;font-size:11px;padding:0;line-height:1;}
+.channel-chip-del:hover{color:var(--red);}
+
+/* Scene cards */
+.scene-card{background:var(--s2);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.scene-card-hd{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.scene-num{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--y);}
+.scene-del-btn{background:none;border:none;color:var(--tmut);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.scene-del-btn:hover{color:var(--red);background:rgba(255,65,54,.08);}
+.scene-body{padding:12px;display:flex;flex-direction:column;gap:8px;}
+.scene-script{font-size:12px;color:var(--tx);line-height:1.6;background:var(--s3);border:1px solid var(--bd);border-radius:7px;padding:9px 11px;}
+.prompt-row{display:flex;flex-direction:column;gap:4px;}
+.prompt-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tdim);}
+.prompt-pill{background:var(--s3);border:1px solid var(--bd);border-radius:7px;padding:8px 11px;font-size:11px;color:var(--tdim);cursor:pointer;transition:all .15s;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;}
+.prompt-pill:hover{border-color:rgba(245,225,50,.2);color:var(--tx);}
+
+/* Image grid */
+.img-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+.img-cell{display:flex;flex-direction:column;gap:6px;}
+.img-box{aspect-ratio:9/16;background:var(--s3);border:1.5px solid var(--bd);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;transition:all .15s;}
+.img-box:hover{border-color:rgba(245,225,50,.3);}
+.img-box.generating{border-color:rgba(245,225,50,.4);animation:pulse 1.5s infinite;}
+.img-box.done{border-color:rgba(46,204,113,.3);}
+.img-box img{width:100%;height:100%;object-fit:cover;display:none;}
+.img-box img.loaded{display:block;}
+.img-box-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tmut);font-size:10px;gap:4px;}
+.img-box-empty span{font-size:18px;}
+.img-scene-lbl{font-size:9px;font-family:'Space Mono',monospace;color:var(--tdim);}
+.img-prompt-btn{font-size:9px;color:var(--tdim);background:var(--s3);border:1px solid var(--bd);border-radius:5px;padding:4px 7px;cursor:pointer;transition:all .15s;text-align:center;}
+.img-prompt-btn:hover{color:var(--y);border-color:rgba(245,225,50,.3);}
+.img-gen-btn{font-size:9px;font-weight:700;color:var(--blk);background:var(--y);border:none;border-radius:5px;padding:5px 7px;cursor:pointer;transition:all .15s;font-family:'Space Mono',monospace;}
+.img-gen-btn:hover{background:#ffe600;}
+.img-gen-btn:disabled{background:var(--s4);color:var(--tmut);cursor:not-allowed;}
+
+/* Clip grid */
+.clip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+.clip-cell{display:flex;flex-direction:column;gap:6px;}
+.clip-box{aspect-ratio:9/16;background:var(--s3);border:1.5px solid var(--bd);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;transition:all .15s;}
+.clip-box:hover{border-color:rgba(245,225,50,.3);}
+.clip-box.generating{border-color:rgba(245,225,50,.4);animation:pulse 1.5s infinite;}
+.clip-box.done{border-color:rgba(46,204,113,.3);}
+.clip-box video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.clip-box-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tmut);font-size:10px;gap:4px;}
+.clip-box-empty span{font-size:18px;}
+.clip-ref-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:.3;}
+
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* Prompt modal */
+.prompt-modal{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:20px;width:520px;max-width:95vw;display:flex;flex-direction:column;gap:14px;max-height:80vh;overflow-y:auto;}
+.prompt-modal textarea{min-height:140px;resize:vertical;}
+
+/* Step nav bar top */
+.pipe-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.pipe-topbar-title{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--y);}
+.pipe-topbar-actions{display:flex;gap:8px;align-items:center;}
+
+/* Step layout */
+.step-layout{flex:1;display:flex;overflow:hidden;height:100%;}
+.step-left{width:380px;flex-shrink:0;border-right:1px solid var(--bd);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.step-right{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
+
+/* Info strip */
+.info-strip{background:rgba(245,225,50,.04);border:1px solid rgba(245,225,50,.12);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--yd);line-height:1.6;}
+.info-strip b{color:var(--y);}
+
+/* status dot */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.dot.grn{background:var(--grn);}
+.dot.red{background:var(--red);}
+.dot.ylw{background:var(--y);}
+.dot.muted{background:var(--tmut);}
 </style>
 </head>
 <body>
@@ -130,8 +233,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
   </div>
   <nav class="nav">
     <div class="nav-sec">
+      <div class="nav-seclbl">Pipeline</div>
+      <button class="ni active" id="nav-pipeline" onclick="switchTab('pipeline')"><span class="ic">💀</span>Skeleton Pipeline<span class="badge hot">NEW</span></button>
+    </div>
+    <div class="nav-sec">
       <div class="nav-seclbl">Generation</div>
-      <button class="ni active" id="nav-vidgen" onclick="switchTab('vidgen')"><span class="ic">✨</span>AI Video Gen<span class="badge live">LIVE</span></button>
+      <button class="ni" id="nav-vidgen" onclick="switchTab('vidgen')"><span class="ic">✨</span>AI Video Gen<span class="badge live">LIVE</span></button>
       <button class="ni" id="nav-imggen" onclick="switchTab('imggen')"><span class="ic">🎨</span>AI Image Gen<span class="badge live">LIVE</span></button>
     </div>
     <div class="nav-sec">
@@ -153,12 +260,251 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
 
 <div class="main">
   <div class="topbar">
-    <span class="pg-title" id="topTitle">AI Video Gen</span>
+    <span class="pg-title" id="topTitle">Skeleton Pipeline</span>
     <span style="color:var(--tdim);margin-left:auto;font-size:11px;font-family:'Space Mono',monospace;">1 credit = $0.01</span>
   </div>
 
+  <!-- ══════════════════════════════════════
+       SKELETON PIPELINE TAB
+  ══════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-pipeline">
+    <div class="pipeline-wrap">
+
+      <!-- Step tabs -->
+      <div class="pipeline-steps">
+        <div class="pipe-step active" id="pstep-0" onclick="goPipeStep(0)">
+          <div class="pipe-num">1</div>Ideation
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step locked" id="pstep-1" onclick="goPipeStep(1)">
+          <div class="pipe-num">2</div>Script
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step locked" id="pstep-2" onclick="goPipeStep(2)">
+          <div class="pipe-num">3</div>Scenes
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step locked" id="pstep-3" onclick="goPipeStep(3)">
+          <div class="pipe-num">4</div>Scene Images
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step locked" id="pstep-4" onclick="goPipeStep(4)">
+          <div class="pipe-num">5</div>Clips
+        </div>
+      </div>
+
+      <!-- ── STEP 1: IDEATION ── -->
+      <div class="pipe-content active" id="pcontent-0">
+        <div class="step-layout">
+          <div class="step-left">
+            <div class="info-strip">
+              <b>Step 1 — Ideation</b><br>
+              Upload competitor channel data (exported from YT Scraper as JSON) — up to 10 channels. Claude will analyse their viral content and suggest 5 video ideas. Or skip and type your own idea below.
+            </div>
+
+            <!-- Channel file upload -->
+            <div>
+              <div class="sec-lbl">Competitor Channel Data <span style="color:var(--tmut);font-weight:400;">(required — up to 10 files)</span></div>
+              <div class="upload-zone" id="channelFileDrop" onclick="document.getElementById('channelFileInput').click()">
+                <input type="file" id="channelFileInput" accept=".json" multiple style="display:none">
+                <span class="up-icon">📁</span>
+                <div class="up-title">Drop channel JSON files here</div>
+                <div class="up-hint">JSON from YT Scraper — up to 10 channels</div>
+              </div>
+              <div class="channel-chips" id="channelChips"></div>
+            </div>
+
+            <!-- OR custom idea -->
+            <div>
+              <div class="sec-lbl" style="margin-bottom:8px;">Or enter your own idea</div>
+              <div style="display:flex;gap:7px;">
+                <input type="text" class="text-input" id="customIdeaInput" placeholder='e.g. "What if you were raised by wolves"' style="flex:1;" onkeydown="if(event.key==='Enter')useCustomIdea()">
+                <button class="btn-sm" onclick="useCustomIdea()" style="white-space:nowrap;">Use This →</button>
+              </div>
+            </div>
+
+            <button class="btn" id="ideateBtn" onclick="runIdeation()" disabled>✨ Generate 5 Ideas with Claude</button>
+
+            <div class="prog-wrap" id="ideateProg">
+              <div class="prog-lbl"><span id="ideateProgLbl">Analysing channels…</span><span id="ideateProgPct">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="ideateProgFill"></div></div>
+            </div>
+            <div class="err-box" id="ideateErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="ideateErrMsg"></div></div>
+          </div>
+
+          <div class="step-right">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tdim);">Generated Ideas — pick one to continue</div>
+            <div id="ideaCards" style="display:flex;flex-direction:column;gap:8px;width:100%;">
+              <div style="text-align:center;padding:60px 20px;color:var(--tmut);font-size:12px;">
+                <span style="font-size:32px;display:block;margin-bottom:10px;">💡</span>
+                Upload channel data and click Generate, or type your own idea
+              </div>
+            </div>
+            <button class="btn" id="ideaContinueBtn" onclick="continueToScript()" style="display:none;max-width:300px;align-self:center;">Continue to Script →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: SCRIPT ── -->
+      <div class="pipe-content" id="pcontent-1">
+        <div class="step-layout">
+          <div class="step-left">
+            <div class="info-strip">
+              <b>Step 2 — Script</b><br>
+              Claude generates a viral script based on your idea and competitor data. Add an optional direction below, or just hit Generate.
+            </div>
+            <div>
+              <div class="sec-lbl">Selected Idea</div>
+              <div id="scriptIdeaDisplay" style="background:var(--s3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--y);line-height:1.5;"></div>
+            </div>
+            <div>
+              <div class="sec-lbl">Additional Direction <span style="color:var(--tmut);font-weight:400;">(optional)</span></div>
+              <textarea class="textarea" id="scriptCustomPrompt" rows="3" placeholder="e.g. Make it more dramatic, focus on the physical changes..."></textarea>
+            </div>
+            <button class="btn" id="scriptGenBtn" onclick="runScriptGen()">📝 Generate Script with Claude</button>
+            <div class="prog-wrap" id="scriptProg">
+              <div class="prog-lbl"><span id="scriptProgLbl">Writing script…</span><span id="scriptProgPct">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="scriptProgFill"></div></div>
+            </div>
+            <div class="err-box" id="scriptErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="scriptErrMsg"></div></div>
+          </div>
+
+          <div class="step-right">
+            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+              <div class="sec-lbl" style="margin:0;">Script</div>
+              <button class="btn-sm" onclick="continueToScenes()" id="scriptContinueBtn" style="display:none;">Split into Scenes →</button>
+            </div>
+            <textarea class="textarea" id="scriptOutput" rows="20" placeholder="Your generated script will appear here — you can edit it before continuing…" style="width:100%;min-height:400px;flex:1;" oninput="onScriptEdit()"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: SCENES ── -->
+      <div class="pipe-content" id="pcontent-2">
+        <div class="step-layout">
+          <div class="step-left">
+            <div class="info-strip">
+              <b>Step 3 — Scenes</b><br>
+              Claude splits your script into scenes and generates image + video prompts for every scene in one pass. You can edit, add, or delete scenes after.
+            </div>
+            <div>
+              <div class="sec-lbl">Script Preview</div>
+              <div id="scenesScriptPreview" style="background:var(--s3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--tdim);line-height:1.6;max-height:200px;overflow-y:auto;"></div>
+            </div>
+            <button class="btn" id="scenesGenBtn" onclick="runScenesGen()">🎬 Auto-Split into Scenes</button>
+            <button class="btn-ghost" onclick="addManualScene()" style="width:100%;margin-top:4px;">＋ Add Scene Manually</button>
+            <div class="prog-wrap" id="scenesProg">
+              <div class="prog-lbl"><span id="scenesProgLbl">Splitting scenes…</span><span id="scenesProgPct">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="scenesProgFill"></div></div>
+            </div>
+            <div class="err-box" id="scenesErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="scenesErrMsg"></div></div>
+            <button class="btn" id="scenesContinueBtn" onclick="continueToImages()" style="display:none;">Continue to Scene Images →</button>
+          </div>
+
+          <div class="step-right" id="scenesRight">
+            <div style="text-align:center;padding:60px 20px;color:var(--tmut);font-size:12px;" id="scenesEmpty">
+              <span style="font-size:32px;display:block;margin-bottom:10px;">🎬</span>
+              Click "Auto-Split into Scenes" to generate scenes with AI
+            </div>
+            <div id="scenesList" style="width:100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: SCENE IMAGES ── -->
+      <div class="pipe-content" id="pcontent-3">
+        <div class="step-layout">
+          <div class="step-left">
+            <div class="info-strip">
+              <b>Step 4 — Scene Images</b><br>
+              Generate reference images for each scene using Nano Banana Pro with your skeleton reference image.
+            </div>
+
+            <!-- Ref image upload -->
+            <div>
+              <div class="sec-lbl">Skeleton Reference Image <span style="color:var(--tmut);font-weight:400;">(optional but recommended)</span></div>
+              <div class="upload-zone" id="pipeRefImgDrop" onclick="document.getElementById('pipeRefImgInput').click()">
+                <input type="file" id="pipeRefImgInput" accept="image/*" style="display:none">
+                <span class="up-icon">💀</span>
+                <div class="up-title">Drop skeleton reference here</div>
+                <div class="up-hint">PNG · JPG · WEBP</div>
+                <div class="up-name" id="pipeRefImgName"></div>
+              </div>
+            </div>
+
+            <!-- Global model selector -->
+            <div>
+              <div class="sec-lbl">Image Model (all scenes)</div>
+              <select class="select" id="imgGlobalModel">
+                <option value="nano-banana-pro" selected>Nano Banana Pro</option>
+                <option value="nano-banana-2">Nano Banana 2</option>
+              </select>
+            </div>
+
+            <button class="btn" id="imgGenAllBtn" onclick="generateAllImages()">🎨 Generate All Scene Images</button>
+            <div class="prog-wrap" id="imgAllProg">
+              <div class="prog-lbl"><span id="imgAllProgLbl">Generating images…</span><span id="imgAllProgPct">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="imgAllProgFill"></div></div>
+            </div>
+
+            <button class="btn" id="imgsContinueBtn" onclick="continueToClips()" style="display:none;">Continue to Clips →</button>
+
+            <div class="err-box" id="imgsErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="imgsErrMsg"></div></div>
+          </div>
+
+          <div class="step-right" id="imgsRight">
+            <div style="text-align:center;padding:40px 20px;color:var(--tmut);font-size:12px;" id="imgsEmpty">
+              <span style="font-size:32px;display:block;margin-bottom:10px;">🖼</span>
+              Scene images will appear here
+            </div>
+            <div class="img-grid" id="imgGrid" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 5: CLIPS ── -->
+      <div class="pipe-content" id="pcontent-4">
+        <div class="step-layout">
+          <div class="step-left">
+            <div class="info-strip">
+              <b>Step 5 — Generate Clips</b><br>
+              Generate a video clip for each scene. Clips are always 9:16. Uses your scene reference images as context.
+            </div>
+
+            <!-- Global model -->
+            <div>
+              <div class="sec-lbl">Video Model (all scenes)</div>
+              <select class="select" id="clipGlobalModel">
+                <option value="grok" selected>Grok — 480p</option>
+                <option value="grok720">Grok — 720p</option>
+                <option value="veo3">Veo 3 Lite</option>
+                <option value="sora2">Sora 2</option>
+              </select>
+            </div>
+
+            <button class="btn" id="clipGenAllBtn" onclick="generateAllClips()">🎬 Generate All Clips</button>
+            <div class="prog-wrap" id="clipAllProg">
+              <div class="prog-lbl"><span id="clipAllProgLbl">Generating clips…</span><span id="clipAllProgPct">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="clipAllProgFill"></div></div>
+            </div>
+            <div class="err-box" id="clipsErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="clipsErrMsg"></div></div>
+          </div>
+
+          <div class="step-right" id="clipsRight">
+            <div style="text-align:center;padding:40px 20px;color:var(--tmut);font-size:12px;" id="clipsEmpty">
+              <span style="font-size:32px;display:block;margin-bottom:10px;">🎬</span>
+              Video clips will appear here
+            </div>
+            <div class="clip-grid" id="clipGrid" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ══ AI VIDEO GEN ══ -->
-  <div class="tab-panel active" id="tab-vidgen">
+  <div class="tab-panel" id="tab-vidgen">
     <div class="workspace">
       <div class="left-panel">
         <div class="upload-zone" id="imgDrop" onclick="document.getElementById('imgInput').click()">
@@ -299,11 +645,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
   <!-- ══ VOICE GEN ══ -->
   <div class="tab-panel" id="tab-voicegen">
     <div class="workspace" style="height:100%;overflow:hidden;">
-
-      <!-- LEFT — voice selection + settings, scrollable -->
       <div class="left-panel" style="overflow-y:auto;height:100%;max-height:100%;">
-
-        <!-- Voice selection -->
         <div class="card">
           <div class="card-hd">Voice</div>
           <div class="card-body">
@@ -317,8 +659,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             <button class="add-voice-btn" onclick="openAddVoiceModal()">＋ Add Voice</button>
           </div>
         </div>
-
-        <!-- Settings -->
         <div class="card">
           <div class="card-hd">Settings</div>
           <div class="card-body">
@@ -344,7 +684,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             </div>
           </div>
         </div>
-
         <button class="btn" id="voiceBtn" onclick="startVoiceGen()">🔊 Generate Speech</button>
         <div class="prog-wrap" id="voiceProg">
           <div class="prog-lbl"><span id="voiceProgLbl">Generating...</span><span id="voiceProgPct">0%</span></div>
@@ -352,11 +691,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
         </div>
         <div class="err-box" id="voiceErr"><div class="err-ttl">// ERROR</div><div class="err-msg" id="voiceErrMsg"></div></div>
       </div>
-
-      <!-- RIGHT — script + output list -->
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;height:100%;min-height:0;">
-
-        <!-- Script area at top -->
         <div style="padding:16px;border-bottom:1px solid var(--bd);flex-shrink:0;">
           <div class="sec-lbl">Script</div>
           <textarea class="textarea" id="voiceScript" rows="5" placeholder="Enter your voiceover script…" oninput="updateCharCount()" style="width:100%;"></textarea>
@@ -364,8 +699,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
             <div class="char-count"><span id="charCount">0</span> characters</div>
           </div>
         </div>
-
-        <!-- Saved outputs list -->
         <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
           <div class="sec-lbl">Generated Voiceovers</div>
           <div id="voiceOutputList">
@@ -376,7 +709,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -502,7 +834,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
       </div>
       <div class="right-panel">
         <div style="width:100%;max-width:400px;background:var(--s2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;">
-          <div style="padding:14px;border-bottom:1px solid var(--bd);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--y);">Scraped Videos</div>
+          <div style="padding:14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--y);">Scraped Videos</div>
+            <button class="btn-sm" id="exportJsonBtn" onclick="exportScrapedJson()" style="display:none;">⬇ Export JSON</button>
+          </div>
           <div id="scrapList" style="max-height:300px;overflow-y:auto;padding:10px;">
             <div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No data yet</div>
           </div>
@@ -550,7 +885,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- ══ ADD VOICE MODAL ══ -->
@@ -571,6 +905,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--blk);color:var(--tx);disp
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="closeAddVoiceModal()">Cancel</button>
       <button class="modal-btn-save" onclick="saveCustomVoice()">Save Voice</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROMPT EDIT MODAL ══ -->
+<div class="modal-overlay" id="promptEditModal" style="display:none;" onclick="closePromptModal(event)">
+  <div class="prompt-modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="promptModalTitle">Edit Prompt</div>
+    <textarea class="textarea prompt-modal-ta" id="promptModalTextarea" rows="8" style="min-height:180px;resize:vertical;"></textarea>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closePromptEditModal()">Cancel</button>
+      <button class="modal-btn-save" onclick="savePromptEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -599,23 +945,31 @@ const MODEL_CONFIG = {
   },
 };
 
-// ══ STATE ══
+const IMG_MODEL_CONFIG = {
+  'nano-banana-pro': { resolutions:['1K','2K','4K'], defaultRes:'1K', credits:{'1K':18,'2K':18,'4K':24} },
+  'nano-banana-2':   { resolutions:['1K','2K','4K'], defaultRes:'1K', credits:{'1K':8,'2K':12,'4K':18} },
+};
+
+// ══ GLOBAL STATE ══
 let credentials = { credits: 500 };
 let selectedImg = null;
 let selectedRefImg = null;
-
-// ── Voice state ──
 let selectedVoiceId = null;
 let selectedVoiceName = null;
 let modalAudioFile = null;
 
-// Load custom voices from localStorage
-function loadCustomVoices() {
-  try { return JSON.parse(localStorage.getItem('dubshorts_custom_voices') || '[]'); } catch(e) { return []; }
-}
-function saveCustomVoices(voices) {
-  localStorage.setItem('dubshorts_custom_voices', JSON.stringify(voices));
-}
+// ── Pipeline State ──
+let pipeState = {
+  currentStep: 0,
+  unlockedSteps: new Set([0]),
+  channelFiles: [],       // {name, data (parsed JSON)}
+  selectedIdea: null,
+  ideas: [],
+  script: '',
+  scenes: [],             // [{sceneNumber, scriptText, imagePrompt, videoPrompt, imageUrl, videoUrl}]
+  refImageFile: null,
+  refImageB64: null,
+};
 
 // ══ TAB SWITCHING ══
 function switchTab(tab) {
@@ -623,12 +977,604 @@ function switchTab(tab) {
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
-  const titles = { vidgen:'AI Video Gen', imggen:'AI Image Gen', voicegen:'Voice Gen', upscale:'Video Upscaler', deadspace:'Dead Space Remover', scraper:'YT Scraper', repurpose:'Repurpose & Distribute' };
+  const titles = {
+    pipeline: 'Skeleton Pipeline',
+    vidgen:'AI Video Gen', imggen:'AI Image Gen', voicegen:'Voice Gen',
+    upscale:'Video Upscaler', deadspace:'Dead Space Remover',
+    scraper:'YT Scraper', repurpose:'Repurpose & Distribute'
+  };
   document.getElementById('topTitle').textContent = titles[tab] || 'DubShorts';
 }
 
 function updateCreditsDisplay() {
   document.getElementById('creditsDisplay').textContent = credentials.credits + ' Credits';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE — STEP NAVIGATION
+// ══════════════════════════════════════════════════════════════════
+function goPipeStep(step) {
+  if (!pipeState.unlockedSteps.has(step)) return;
+  pipeState.currentStep = step;
+  document.querySelectorAll('.pipe-step').forEach((el, i) => {
+    el.classList.remove('active', 'locked');
+    if (i === step) el.classList.add('active');
+    else if (!pipeState.unlockedSteps.has(i)) el.classList.add('locked');
+    else if (pipeState.unlockedSteps.has(i) && i < step) el.classList.add('done');
+  });
+  document.querySelectorAll('.pipe-content').forEach((el, i) => {
+    el.classList.toggle('active', i === step);
+  });
+}
+
+function unlockStep(step) {
+  pipeState.unlockedSteps.add(step);
+  const el = document.getElementById('pstep-' + step);
+  if (el) el.classList.remove('locked');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE — STEP 1: IDEATION
+// ══════════════════════════════════════════════════════════════════
+const channelFileDrop = document.getElementById('channelFileDrop');
+const channelFileInput = document.getElementById('channelFileInput');
+
+channelFileDrop.addEventListener('dragover', e => { e.preventDefault(); channelFileDrop.classList.add('drag'); });
+channelFileDrop.addEventListener('dragleave', () => channelFileDrop.classList.remove('drag'));
+channelFileDrop.addEventListener('drop', e => {
+  e.preventDefault(); channelFileDrop.classList.remove('drag');
+  Array.from(e.dataTransfer.files).forEach(f => loadChannelFile(f));
+});
+channelFileInput.addEventListener('change', () => {
+  Array.from(channelFileInput.files).forEach(f => loadChannelFile(f));
+  channelFileInput.value = '';
+});
+
+function loadChannelFile(f) {
+  if (!f.name.endsWith('.json')) { alert('Please upload JSON files only.'); return; }
+  if (pipeState.channelFiles.length >= 10) { alert('Maximum 10 channel files.'); return; }
+  if (pipeState.channelFiles.find(x => x.name === f.name)) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      pipeState.channelFiles.push({ name: f.name, data });
+      renderChannelChips();
+      updateIdeateBtn();
+    } catch(err) {
+      alert('Could not parse JSON: ' + f.name);
+    }
+  };
+  reader.readAsText(f);
+}
+
+function renderChannelChips() {
+  const container = document.getElementById('channelChips');
+  container.innerHTML = '';
+  pipeState.channelFiles.forEach((cf, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'channel-chip';
+    chip.innerHTML = `📁 ${cf.name.replace('.json','')} <button class="channel-chip-del" onclick="removeChannelFile(${i})">✕</button>`;
+    container.appendChild(chip);
+  });
+  channelFileDrop.classList.toggle('has-file', pipeState.channelFiles.length > 0);
+}
+
+function removeChannelFile(i) {
+  pipeState.channelFiles.splice(i, 1);
+  renderChannelChips();
+  updateIdeateBtn();
+}
+
+function updateIdeateBtn() {
+  document.getElementById('ideateBtn').disabled = pipeState.channelFiles.length === 0;
+}
+
+function useCustomIdea() {
+  const val = document.getElementById('customIdeaInput').value.trim();
+  if (!val) { alert('Please enter an idea first.'); return; }
+  pipeState.ideas = [val];
+  pipeState.selectedIdea = val;
+  renderIdeaCards([val], 0);
+  document.getElementById('ideaContinueBtn').style.display = 'block';
+}
+
+async function runIdeation() {
+  if (pipeState.channelFiles.length === 0) { alert('Upload at least one channel file first.'); return; }
+  const btn = document.getElementById('ideateBtn');
+  btn.disabled = true; btn.textContent = '⏳ Analysing…';
+  document.getElementById('ideateProg').classList.add('vis');
+  document.getElementById('ideateErr').classList.remove('vis');
+  document.getElementById('ideaContinueBtn').style.display = 'none';
+
+  let pct = 0;
+  const fill = document.getElementById('ideateProgFill'), pctEl = document.getElementById('ideateProgPct');
+  const tick = setInterval(() => {
+    if (pct < 85) { pct += 2; if (pct > 85) pct = 85; fill.style.width = pct + '%'; pctEl.textContent = Math.round(pct) + '%'; }
+  }, 400);
+
+  try {
+    const fd = new FormData();
+    pipeState.channelFiles.forEach((cf, i) => {
+      const blob = new Blob([JSON.stringify(cf.data)], { type: 'application/json' });
+      fd.append('channelFiles', blob, cf.name);
+    });
+
+    const res = await fetch('/pipeline/ideate', { method: 'POST', body: fd });
+    const data = await res.json();
+    clearInterval(tick); fill.style.width = '100%'; pctEl.textContent = '100%';
+    if (!data.success) throw new Error(data.error);
+
+    pipeState.ideas = data.ideas;
+    pipeState.selectedIdea = null;
+    renderIdeaCards(data.ideas, null);
+  } catch(err) {
+    clearInterval(tick);
+    document.getElementById('ideateErr').classList.add('vis');
+    document.getElementById('ideateErrMsg').textContent = err.message;
+  }
+  btn.disabled = false; btn.textContent = '✨ Generate 5 Ideas with Claude';
+  setTimeout(() => document.getElementById('ideateProg').classList.remove('vis'), 2000);
+}
+
+function renderIdeaCards(ideas, selectedIdx) {
+  const container = document.getElementById('ideaCards');
+  container.innerHTML = '';
+  ideas.forEach((idea, i) => {
+    const card = document.createElement('div');
+    card.className = 'idea-card' + (i === selectedIdx ? ' selected' : '');
+    card.onclick = () => selectIdea(i);
+    card.innerHTML = `
+      <div class="idea-card-num">IDEA ${i + 1}</div>
+      <div class="idea-card-text">${idea}</div>
+      <div class="idea-check">✓</div>
+    `;
+    container.appendChild(card);
+  });
+  if (selectedIdx !== null) {
+    document.getElementById('ideaContinueBtn').style.display = 'block';
+  }
+}
+
+function selectIdea(idx) {
+  pipeState.selectedIdea = pipeState.ideas[idx];
+  document.querySelectorAll('.idea-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+  document.getElementById('ideaContinueBtn').style.display = 'block';
+}
+
+function continueToScript() {
+  if (!pipeState.selectedIdea) { alert('Select an idea first.'); return; }
+  unlockStep(1);
+  goPipeStep(1);
+  document.getElementById('scriptIdeaDisplay').textContent = pipeState.selectedIdea;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE — STEP 2: SCRIPT
+// ══════════════════════════════════════════════════════════════════
+async function runScriptGen() {
+  const btn = document.getElementById('scriptGenBtn');
+  btn.disabled = true; btn.textContent = '⏳ Writing…';
+  document.getElementById('scriptProg').classList.add('vis');
+  document.getElementById('scriptErr').classList.remove('vis');
+  document.getElementById('scriptContinueBtn').style.display = 'none';
+
+  let pct = 0;
+  const fill = document.getElementById('scriptProgFill'), pctEl = document.getElementById('scriptProgPct');
+  const tick = setInterval(() => {
+    if (pct < 90) { pct += 1.5; if (pct > 90) pct = 90; fill.style.width = pct + '%'; pctEl.textContent = Math.round(pct) + '%'; }
+  }, 400);
+
+  try {
+    const res = await fetch('/pipeline/script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idea: pipeState.selectedIdea,
+        channelData: pipeState.channelFiles.map(f => f.data),
+        customPrompt: document.getElementById('scriptCustomPrompt').value.trim(),
+      })
+    });
+    const data = await res.json();
+    clearInterval(tick); fill.style.width = '100%'; pctEl.textContent = '100%';
+    if (!data.success) throw new Error(data.error);
+
+    pipeState.script = data.script;
+    document.getElementById('scriptOutput').value = data.script;
+    document.getElementById('scriptContinueBtn').style.display = 'block';
+  } catch(err) {
+    clearInterval(tick);
+    document.getElementById('scriptErr').classList.add('vis');
+    document.getElementById('scriptErrMsg').textContent = err.message;
+  }
+  btn.disabled = false; btn.textContent = '📝 Generate Script with Claude';
+  setTimeout(() => document.getElementById('scriptProg').classList.remove('vis'), 2000);
+}
+
+function onScriptEdit() {
+  pipeState.script = document.getElementById('scriptOutput').value;
+  if (pipeState.script.trim()) {
+    document.getElementById('scriptContinueBtn').style.display = 'block';
+  }
+}
+
+function continueToScenes() {
+  pipeState.script = document.getElementById('scriptOutput').value.trim();
+  if (!pipeState.script) { alert('Please generate or write a script first.'); return; }
+  unlockStep(2);
+  goPipeStep(2);
+  document.getElementById('scenesScriptPreview').textContent = pipeState.script;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE — STEP 3: SCENES
+// ══════════════════════════════════════════════════════════════════
+async function runScenesGen() {
+  const btn = document.getElementById('scenesGenBtn');
+  btn.disabled = true; btn.textContent = '⏳ Splitting…';
+  document.getElementById('scenesProg').classList.add('vis');
+  document.getElementById('scenesErr').classList.remove('vis');
+  document.getElementById('scenesContinueBtn').style.display = 'none';
+
+  let pct = 0;
+  const fill = document.getElementById('scenesProgFill'), pctEl = document.getElementById('scenesProgPct');
+  const tick = setInterval(() => {
+    if (pct < 88) { pct += 1.2; if (pct > 88) pct = 88; fill.style.width = pct + '%'; pctEl.textContent = Math.round(pct) + '%'; }
+  }, 500);
+
+  try {
+    const res = await fetch('/pipeline/scenes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ script: pipeState.script, idea: pipeState.selectedIdea })
+    });
+    const data = await res.json();
+    clearInterval(tick); fill.style.width = '100%'; pctEl.textContent = '100%';
+    if (!data.success) throw new Error(data.error);
+
+    pipeState.scenes = data.scenes.map(s => ({ ...s, imageUrl: null, videoUrl: null }));
+    renderScenesList();
+    document.getElementById('scenesEmpty').style.display = 'none';
+    document.getElementById('scenesContinueBtn').style.display = 'block';
+  } catch(err) {
+    clearInterval(tick);
+    document.getElementById('scenesErr').classList.add('vis');
+    document.getElementById('scenesErrMsg').textContent = err.message;
+  }
+  btn.disabled = false; btn.textContent = '🎬 Auto-Split into Scenes';
+  setTimeout(() => document.getElementById('scenesProg').classList.remove('vis'), 2000);
+}
+
+function renderScenesList() {
+  const list = document.getElementById('scenesList');
+  list.innerHTML = '';
+  pipeState.scenes.forEach((scene, idx) => {
+    const card = document.createElement('div');
+    card.className = 'scene-card';
+    card.id = `scene-card-${idx}`;
+    card.innerHTML = `
+      <div class="scene-card-hd">
+        <div class="scene-num">SCENE ${scene.sceneNumber}</div>
+        <button class="scene-del-btn" onclick="deleteScene(${idx})">✕</button>
+      </div>
+      <div class="scene-body">
+        <div class="sec-lbl" style="margin-bottom:3px;">Script</div>
+        <div class="scene-script" contenteditable="true" onblur="updateSceneScript(${idx}, this.textContent)">${scene.scriptText}</div>
+        <div class="prompt-row">
+          <div class="prompt-label">🖼 Image Prompt</div>
+          <div class="prompt-pill" onclick="openPromptModal('image', ${idx})">${scene.imagePrompt}</div>
+        </div>
+        <div class="prompt-row">
+          <div class="prompt-label">🎬 Video Prompt</div>
+          <div class="prompt-pill" onclick="openPromptModal('video', ${idx})">${scene.videoPrompt}</div>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function deleteScene(idx) {
+  pipeState.scenes.splice(idx, 1);
+  renderScenesList();
+}
+
+function updateSceneScript(idx, text) {
+  pipeState.scenes[idx].scriptText = text;
+}
+
+function addManualScene() {
+  pipeState.scenes.push({
+    sceneNumber: pipeState.scenes.length + 1,
+    scriptText: 'Enter scene script here…',
+    imagePrompt: 'Enter image prompt here…',
+    videoPrompt: 'Enter video prompt here…',
+    imageUrl: null,
+    videoUrl: null,
+  });
+  renderScenesList();
+  document.getElementById('scenesEmpty').style.display = 'none';
+  document.getElementById('scenesContinueBtn').style.display = 'block';
+}
+
+function continueToImages() {
+  if (pipeState.scenes.length === 0) { alert('Generate or add scenes first.'); return; }
+  unlockStep(3);
+  goPipeStep(3);
+  renderImgGrid();
+}
+
+// ══ Prompt Edit Modal ══
+let promptModalCtx = null; // {type:'image'|'video', idx}
+
+function openPromptModal(type, idx) {
+  promptModalCtx = { type, idx };
+  const scene = pipeState.scenes[idx];
+  document.getElementById('promptModalTitle').textContent = (type === 'image' ? '🖼 Image' : '🎬 Video') + ` Prompt — Scene ${scene.sceneNumber}`;
+  document.getElementById('promptModalTextarea').value = type === 'image' ? scene.imagePrompt : scene.videoPrompt;
+  document.getElementById('promptEditModal').style.display = 'flex';
+}
+
+function closePromptEditModal() {
+  document.getElementById('promptEditModal').style.display = 'none';
+  promptModalCtx = null;
+}
+
+function closePromptModal(e) {
+  if (e.target === document.getElementById('promptEditModal')) closePromptEditModal();
+}
+
+function savePromptEdit() {
+  if (!promptModalCtx) return;
+  const val = document.getElementById('promptModalTextarea').value;
+  const { type, idx } = promptModalCtx;
+  if (type === 'image') pipeState.scenes[idx].imagePrompt = val;
+  else pipeState.scenes[idx].videoPrompt = val;
+  renderScenesList();
+  closePromptEditModal();
+  // Also update grid if on that step
+  renderImgGrid();
+  renderClipGrid();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE — STEP 4: SCENE IMAGES
+// ══════════════════════════════════════════════════════════════════
+const pipeRefImgDrop = document.getElementById('pipeRefImgDrop');
+const pipeRefImgInput = document.getElementById('pipeRefImgInput');
+
+pipeRefImgDrop.addEventListener('dragover', e => { e.preventDefault(); pipeRefImgDrop.classList.add('drag'); });
+pipeRefImgDrop.addEventListener('dragleave', () => pipeRefImgDrop.classList.remove('drag'));
+pipeRefImgDrop.addEventListener('drop', e => {
+  e.preventDefault(); pipeRefImgDrop.classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadPipeRefImg(e.dataTransfer.files[0]);
+});
+pipeRefImgInput.addEventListener('change', () => {
+  if (pipeRefImgInput.files[0]) loadPipeRefImg(pipeRefImgInput.files[0]);
+});
+
+function loadPipeRefImg(f) {
+  pipeState.refImageFile = f;
+  document.getElementById('pipeRefImgName').textContent = '📎 ' + f.name;
+  pipeRefImgDrop.classList.add('has-file');
+  const reader = new FileReader();
+  reader.onload = e => { pipeState.refImageB64 = e.target.result; };
+  reader.readAsDataURL(f);
+}
+
+function renderImgGrid() {
+  if (pipeState.scenes.length === 0) return;
+  document.getElementById('imgsEmpty').style.display = 'none';
+  const grid = document.getElementById('imgGrid');
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+  pipeState.scenes.forEach((scene, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'img-cell';
+    cell.id = `img-cell-${idx}`;
+    cell.innerHTML = `
+      <div class="img-box${scene.imageUrl ? ' done' : ''}" id="img-box-${idx}">
+        ${scene.imageUrl
+          ? `<img src="${scene.imageUrl}" class="loaded" alt="Scene ${scene.sceneNumber}">`
+          : `<div class="img-box-empty"><span>🖼</span><span>Scene ${scene.sceneNumber}</span></div>`
+        }
+      </div>
+      <div class="img-scene-lbl">Scene ${scene.sceneNumber}</div>
+      <button class="img-prompt-btn" onclick="openPromptModal('image', ${idx})">Edit Prompt</button>
+      <select class="select" id="img-model-${idx}" style="font-size:9px;padding:4px 6px;">
+        <option value="nano-banana-pro" selected>Pro</option>
+        <option value="nano-banana-2">Nano 2</option>
+      </select>
+      <button class="img-gen-btn" id="img-gen-btn-${idx}" onclick="generateSingleImage(${idx})">
+        ${scene.imageUrl ? '↺ Regen' : '⚡ Gen'}
+      </button>
+    `;
+    grid.appendChild(cell);
+  });
+}
+
+async function generateSingleImage(idx) {
+  const scene = pipeState.scenes[idx];
+  const model = document.getElementById(`img-model-${idx}`)?.value || document.getElementById('imgGlobalModel').value;
+  const btn = document.getElementById(`img-gen-btn-${idx}`);
+  const box = document.getElementById(`img-box-${idx}`);
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  if (box) { box.classList.add('generating'); }
+
+  try {
+    const fd = new FormData();
+    fd.append('prompt', scene.imagePrompt);
+    fd.append('model', model);
+    fd.append('sceneIndex', idx);
+    if (pipeState.refImageFile) fd.append('refImage', pipeState.refImageFile);
+
+    const res = await fetch('/pipeline/generate-scene-image', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    pipeState.scenes[idx].imageUrl = data.imageUrl;
+    // Update box
+    if (box) {
+      box.classList.remove('generating');
+      box.classList.add('done');
+      box.innerHTML = `<img src="${data.imageUrl}" class="loaded" alt="Scene ${scene.sceneNumber}">`;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Regen'; }
+    checkAllImagesReady();
+  } catch(err) {
+    if (box) { box.classList.remove('generating'); }
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Gen'; }
+    alert('Image gen failed (scene ' + (idx+1) + '): ' + err.message);
+  }
+}
+
+async function generateAllImages() {
+  const model = document.getElementById('imgGlobalModel').value;
+  const btn = document.getElementById('imgGenAllBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating…';
+  document.getElementById('imgAllProg').classList.add('vis');
+  document.getElementById('imgsErr').classList.remove('vis');
+
+  const fill = document.getElementById('imgAllProgFill'), pctEl = document.getElementById('imgAllProgPct'), lbl = document.getElementById('imgAllProgLbl');
+  let done = 0;
+  const total = pipeState.scenes.length;
+
+  // Set global model on all individual selects
+  pipeState.scenes.forEach((_, i) => {
+    const sel = document.getElementById(`img-model-${i}`);
+    if (sel) sel.value = model;
+  });
+
+  // Generate sequentially (to avoid overwhelming the API)
+  for (let i = 0; i < pipeState.scenes.length; i++) {
+    lbl.textContent = `Scene ${i+1} of ${total}…`;
+    await generateSingleImage(i);
+    done++;
+    const pct = Math.round((done / total) * 100);
+    fill.style.width = pct + '%'; pctEl.textContent = pct + '%';
+  }
+
+  btn.disabled = false; btn.textContent = '🎨 Generate All Scene Images';
+  setTimeout(() => document.getElementById('imgAllProg').classList.remove('vis'), 2000);
+  checkAllImagesReady();
+}
+
+function checkAllImagesReady() {
+  const allDone = pipeState.scenes.every(s => s.imageUrl);
+  document.getElementById('imgsContinueBtn').style.display = allDone ? 'block' : 'none';
+}
+
+function continueToClips() {
+  unlockStep(4);
+  goPipeStep(4);
+  renderClipGrid();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE — STEP 5: CLIPS
+// ══════════════════════════════════════════════════════════════════
+function renderClipGrid() {
+  if (pipeState.scenes.length === 0) return;
+  document.getElementById('clipsEmpty').style.display = 'none';
+  const grid = document.getElementById('clipGrid');
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+  pipeState.scenes.forEach((scene, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'clip-cell';
+    cell.id = `clip-cell-${idx}`;
+    cell.innerHTML = `
+      <div class="clip-box${scene.videoUrl ? ' done' : ''}" id="clip-box-${idx}">
+        ${scene.videoUrl
+          ? `<video src="${scene.videoUrl}" loop muted autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>`
+          : scene.imageUrl
+            ? `<img class="clip-ref-img" src="${scene.imageUrl}" alt="">`
+            : ''
+        }
+        ${!scene.videoUrl ? `<div class="clip-box-empty"><span>🎬</span><span>Scene ${scene.sceneNumber}</span></div>` : ''}
+      </div>
+      <div class="img-scene-lbl">Scene ${scene.sceneNumber}</div>
+      <button class="img-prompt-btn" onclick="openPromptModal('video', ${idx})">Edit Prompt</button>
+      <select class="select" id="clip-model-${idx}" style="font-size:9px;padding:4px 6px;">
+        <option value="grok" selected>Grok 480p</option>
+        <option value="grok720">Grok 720p</option>
+        <option value="veo3">Veo 3</option>
+        <option value="sora2">Sora 2</option>
+      </select>
+      <button class="img-gen-btn" id="clip-gen-btn-${idx}" onclick="generateSingleClip(${idx})">
+        ${scene.videoUrl ? '↺ Regen' : '⚡ Gen'}
+      </button>
+    `;
+    grid.appendChild(cell);
+  });
+}
+
+async function generateSingleClip(idx) {
+  const scene = pipeState.scenes[idx];
+  const modelVal = document.getElementById(`clip-model-${idx}`)?.value || 'grok';
+  const model = modelVal === 'grok720' ? 'grok' : modelVal;
+  const quality = modelVal === 'grok720' ? '720p' : '480p';
+  const btn = document.getElementById(`clip-gen-btn-${idx}`);
+  const box = document.getElementById(`clip-box-${idx}`);
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  if (box) { box.classList.add('generating'); }
+
+  try {
+    const res = await fetch('/pipeline/generate-scene-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: scene.videoPrompt,
+        model,
+        quality,
+        sceneIndex: idx,
+        refImageUrl: scene.imageUrl || null,
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    pipeState.scenes[idx].videoUrl = data.videoUrl;
+    if (box) {
+      box.classList.remove('generating');
+      box.classList.add('done');
+      box.innerHTML = `<video src="${data.videoUrl}" loop muted autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>`;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Regen'; }
+  } catch(err) {
+    if (box) { box.classList.remove('generating'); }
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Gen'; }
+    alert('Clip gen failed (scene ' + (idx+1) + '): ' + err.message);
+  }
+}
+
+async function generateAllClips() {
+  const globalModel = document.getElementById('clipGlobalModel').value;
+  const btn = document.getElementById('clipGenAllBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating…';
+  document.getElementById('clipAllProg').classList.add('vis');
+  document.getElementById('clipsErr').classList.remove('vis');
+
+  const fill = document.getElementById('clipAllProgFill'), pctEl = document.getElementById('clipAllProgPct'), lbl = document.getElementById('clipAllProgLbl');
+  let done = 0;
+  const total = pipeState.scenes.length;
+
+  pipeState.scenes.forEach((_, i) => {
+    const sel = document.getElementById(`clip-model-${i}`);
+    if (sel) sel.value = globalModel;
+  });
+
+  for (let i = 0; i < pipeState.scenes.length; i++) {
+    lbl.textContent = `Scene ${i+1} of ${total}…`;
+    await generateSingleClip(i);
+    done++;
+    const pct = Math.round((done / total) * 100);
+    fill.style.width = pct + '%'; pctEl.textContent = pct + '%';
+  }
+
+  btn.disabled = false; btn.textContent = '🎬 Generate All Clips';
+  setTimeout(() => document.getElementById('clipAllProg').classList.remove('vis'), 2000);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -720,10 +1666,6 @@ async function startVidGen() {
 // ══════════════════════════════════════════════════════════════════
 // IMAGE GEN
 // ══════════════════════════════════════════════════════════════════
-const IMG_MODEL_CONFIG = {
-  'nano-banana-pro': { resolutions:['1K','2K','4K'], defaultRes:'1K', credits:{'1K':18,'2K':18,'4K':24} },
-  'nano-banana-2':   { resolutions:['1K','2K','4K'], defaultRes:'1K', credits:{'1K':8,'2K':12,'4K':18} },
-};
 const refImgDrop = document.getElementById('refImgDrop');
 const refImgInput = document.getElementById('refImgInput');
 refImgDrop.addEventListener('dragover', e => { e.preventDefault(); refImgDrop.classList.add('drag'); });
@@ -790,23 +1732,24 @@ async function startImgGen() {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// VOICE GEN — all Chatterbox, no Kie.ai
+// VOICE GEN
 // ══════════════════════════════════════════════════════════════════
+function loadCustomVoices() {
+  try { return JSON.parse(localStorage.getItem('dubshorts_custom_voices') || '[]'); } catch(e) { return []; }
+}
+function saveCustomVoices(voices) {
+  localStorage.setItem('dubshorts_custom_voices', JSON.stringify(voices));
+}
 
 function renderVoiceDropdown() {
   const sel = document.getElementById('voiceDropdown');
   const voices = loadCustomVoices();
   const currentId = selectedVoiceId;
   sel.innerHTML = '';
-  // Mark always first
-  // Custom voices
   voices.forEach(v => {
     const opt = document.createElement('option');
-    opt.value = v.id;
-    opt.textContent = v.name;
-    sel.appendChild(opt);
+    opt.value = v.id; opt.textContent = v.name; sel.appendChild(opt);
   });
-  // Restore selection
   sel.value = currentId || '';
   updateDeleteBtn();
 }
@@ -815,48 +1758,24 @@ function onVoiceDropdownChange() {
   const sel = document.getElementById('voiceDropdown');
   selectedVoiceId = sel.value;
   const voices = loadCustomVoices();
-  if (selectedVoiceId === '__chatterbox_default__') {
-    selectedVoiceName = null;
-  } else {
-    const v = voices.find(x => x.id === selectedVoiceId);
-    selectedVoiceName = v ? v.name : 'Custom';
-  }
+  const v = voices.find(x => x.id === selectedVoiceId);
+  selectedVoiceName = v ? v.name : 'Custom';
   updateDeleteBtn();
 }
 
 function updateDeleteBtn() {
   const btn = document.getElementById('deleteVoiceBtn');
-  btn.style.display = selectedVoiceId !== '__chatterbox_default__' ? 'block' : 'none';
+  btn.style.display = selectedVoiceId ? 'block' : 'none';
 }
 
 function deleteSelectedVoice() {
-  
   if (!confirm('Delete "' + selectedVoiceName + '"?')) return;
   const voices = loadCustomVoices().filter(v => v.id !== selectedVoiceId);
   saveCustomVoices(voices);
-  selectedVoiceId = null;
-  selectedVoiceName = null;
+  selectedVoiceId = null; selectedVoiceName = null;
   renderVoiceDropdown();
 }
 
-function selectVoice(id, name) {
-  selectedVoiceId = id;
-  selectedVoiceName = name;
-  renderVoiceDropdown();
-}
-
-function renderCustomVoices() {
-  renderVoiceDropdown();
-}
-
-function deleteCustomVoice(id) {
-  const voices = loadCustomVoices().filter(v => v.id !== id);
-  saveCustomVoices(voices);
-  if (selectedVoiceId === id) { selectedVoiceId = null; selectedVoiceName = null; }
-  renderVoiceDropdown();
-}
-
-// Modal
 function openAddVoiceModal() {
   modalAudioFile = null;
   document.getElementById('modalAudioFnm').textContent = '';
@@ -864,9 +1783,7 @@ function openAddVoiceModal() {
   document.getElementById('modalAudioDrop').classList.remove('has-file');
   document.getElementById('addVoiceModal').style.display = 'flex';
 }
-function closeAddVoiceModal() {
-  document.getElementById('addVoiceModal').style.display = 'none';
-}
+function closeAddVoiceModal() { document.getElementById('addVoiceModal').style.display = 'none'; }
 
 const modalAudioInput = document.getElementById('modalAudioInput');
 const modalAudioDrop = document.getElementById('modalAudioDrop');
@@ -893,8 +1810,7 @@ function saveCustomVoice() {
     saveCustomVoices(voices);
     closeAddVoiceModal();
     renderVoiceDropdown();
-    selectedVoiceId = id;
-    selectedVoiceName = name;
+    selectedVoiceId = id; selectedVoiceName = name;
     document.getElementById('voiceDropdown').value = id;
     updateDeleteBtn();
   };
@@ -904,79 +1820,53 @@ function saveCustomVoice() {
 async function startVoiceGen() {
   const script = document.getElementById('voiceScript').value.trim();
   if (!script) { alert('Please enter a script.'); return; }
-  if (script.length > 10000) { alert('Script too long — Chatterbox max is ~500 characters. Please shorten it.'); return; }
   if (!selectedVoiceId) { alert('Please select a voice first.'); return; }
-
   const btn = document.getElementById('voiceBtn');
   btn.disabled = true; btn.textContent = '⏳ Generating…';
   document.getElementById('voiceProg').classList.add('vis');
   document.getElementById('voiceErr').classList.remove('vis');
-  // dl handled by output list
-
   let pct = 0;
   const fill = document.getElementById('vrFill'), pctLbl = document.getElementById('voiceProgPct'), lbl = document.getElementById('voiceProgLbl');
-  // Slow progress for Chatterbox cold starts (can take 2-3 min)
   const tick = setInterval(() => {
     if (pct < 95) {
-      const increment = pct < 30 ? 2 : pct < 60 ? 0.8 : pct < 85 ? 0.3 : 0.05;
-      pct += Math.random() * increment;
-      if (pct > 95) pct = 95;
-      fill.style.width = pct + '%';
-      pctLbl.textContent = Math.round(pct) + '%';
+      const inc = pct < 30 ? 2 : pct < 60 ? 0.8 : pct < 85 ? 0.3 : 0.05;
+      pct += Math.random() * inc; if (pct > 95) pct = 95;
+      fill.style.width = pct + '%'; pctLbl.textContent = Math.round(pct) + '%';
       if (pct > 15) lbl.textContent = 'Waiting for GPU…';
       if (pct > 40) lbl.textContent = 'Generating audio…';
       if (pct > 75) lbl.textContent = 'Almost done…';
     }
   }, 800);
-
   try {
     const fd = new FormData();
     fd.append('text', script);
     fd.append('exaggeration', document.getElementById('exagSlider').value);
-    fd.append('cfgWeight', '0.5');
-    fd.append('temperature', '0.8');
-
-    if (selectedVoiceId === '__chatterbox_default__') {
-      // No voice sample — Chatterbox default voice
-      lbl.textContent = 'Generating with Chatterbox…';
-    } else {
-      // Custom cloned voice
-      const voices = loadCustomVoices();
-      const v = voices.find(x => x.id === selectedVoiceId);
-      if (!v) throw new Error('Voice not found — please re-add it.');
-      const byteStr = atob(v.audioB64);
-      const ab = new ArrayBuffer(byteStr.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
-      const blob = new Blob([ab], { type: v.mimeType || 'audio/wav' });
-      fd.append('voiceSample', blob, 'voice.wav');
-      lbl.textContent = 'Cloning voice on GPU…';
-    }
-
+    fd.append('cfgWeight', '0.5'); fd.append('temperature', '0.8');
+    const voices = loadCustomVoices();
+    const v = voices.find(x => x.id === selectedVoiceId);
+    if (!v) throw new Error('Voice not found — please re-add it.');
+    const byteStr = atob(v.audioB64);
+    const ab = new ArrayBuffer(byteStr.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+    const blob = new Blob([ab], { type: v.mimeType || 'audio/wav' });
+    fd.append('voiceSample', blob, 'voice.wav');
     const res = await fetch('/generate-voice', { method: 'POST', body: fd });
     const data = await res.json();
     clearInterval(tick); fill.style.width = '100%'; pctLbl.textContent = '100%';
     if (!data.success) throw new Error(data.error || 'Voice generation failed');
-
     addVoiceOutput(data.audioUrl, script.slice(0, 60) + (script.length > 60 ? '…' : ''), selectedVoiceName);
-
   } catch(err) {
     clearInterval(tick);
     document.getElementById('voiceErr').classList.add('vis');
     document.getElementById('voiceErrMsg').textContent = err.message;
   }
-
   btn.disabled = false; btn.textContent = '🔊 Generate Speech';
   setTimeout(() => document.getElementById('voiceProg').classList.remove('vis'), 2000);
 }
 
-// ══ VOICE OUTPUT LIST ══
-function loadVoiceOutputs() {
-  try { return JSON.parse(localStorage.getItem('dubshorts_voice_outputs') || '[]'); } catch(e) { return []; }
-}
-function saveVoiceOutputs(outputs) {
-  localStorage.setItem('dubshorts_voice_outputs', JSON.stringify(outputs));
-}
+function loadVoiceOutputs() { try { return JSON.parse(localStorage.getItem('dubshorts_voice_outputs') || '[]'); } catch(e) { return []; } }
+function saveVoiceOutputs(outputs) { localStorage.setItem('dubshorts_voice_outputs', JSON.stringify(outputs)); }
 
 function addVoiceOutput(audioUrl, scriptPreview, voiceName) {
   const outputs = loadVoiceOutputs();
@@ -997,12 +1887,8 @@ function renderVoiceOutputs() {
   const list = document.getElementById('voiceOutputList');
   const empty = document.getElementById('voiceOutputEmpty');
   const outputs = loadVoiceOutputs();
-  // Remove all output cards but keep empty state
   list.querySelectorAll('.vo-card').forEach(el => el.remove());
-  if (outputs.length === 0) {
-    if (empty) empty.style.display = 'block';
-    return;
-  }
+  if (outputs.length === 0) { if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
   outputs.forEach(o => {
     const card = document.createElement('div');
@@ -1024,38 +1910,27 @@ function renderVoiceOutputs() {
   });
 }
 
-// ══ VIDEO UPSCALER ══
+// ══ UPSCALER ══
 const upscaleZone = document.getElementById('upscaleZone');
 upscaleZone.addEventListener('dragover', e => { e.preventDefault(); upscaleZone.classList.add('drag'); });
 upscaleZone.addEventListener('dragleave', () => upscaleZone.classList.remove('drag'));
 upscaleZone.addEventListener('drop', e => { e.preventDefault(); upscaleZone.classList.remove('drag'); if (e.dataTransfer.files[0]) loadUpscale(e.dataTransfer.files[0]); });
 document.getElementById('upscaleInput').addEventListener('change', () => { if (document.getElementById('upscaleInput').files[0]) loadUpscale(document.getElementById('upscaleInput').files[0]); });
 function loadUpscale(f) { document.getElementById('upscaleFnm').textContent = '📎 ' + f.name; upscaleZone.classList.add('has-file'); document.getElementById('upscaleBtn').disabled = false; const vid = document.getElementById('upVid'); vid.src = URL.createObjectURL(f); vid.style.display = 'block'; }
-function updateUpscaleCost() { const sel = document.getElementById('upscaleQuality'); document.getElementById('upCost').textContent = sel.options[sel.selectedIndex].dataset.cr + ' credits'; }
+
 async function startUpscale() {
   const fileInput = document.getElementById('upscaleInput');
   const quality = document.getElementById('upscaleQuality').value;
   const btn = document.getElementById('upscaleBtn');
-  const vid = document.getElementById('upVid');
-
   if (!fileInput.files[0]) { alert('Please select a video file first.'); return; }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Upscaling…';
-
+  btn.disabled = true; btn.textContent = '⏳ Upscaling…';
   try {
     const fd = new FormData();
-    fd.append('video', fileInput.files[0]);
-    fd.append('quality', quality);
-
+    fd.append('video', fileInput.files[0]); fd.append('quality', quality);
     const res = await fetch('/upscale-video', { method: 'POST', body: fd });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Upscale failed');
-
-    vid.src = data.videoUrl;
-    vid.style.display = 'block';
-
-    // Add download button if not already there
+    document.getElementById('upVid').src = data.videoUrl;
     let dlWrap = document.getElementById('upscaleDlWrap');
     if (!dlWrap) {
       dlWrap = document.createElement('div');
@@ -1065,16 +1940,11 @@ async function startUpscale() {
       document.getElementById('upVid').closest('.right-panel').appendChild(dlWrap);
     }
     document.getElementById('upscaleDlBtn').href = data.videoUrl;
-
-  } catch(err) {
-    alert('Error: ' + err.message);
-  }
-
-  btn.disabled = false;
-  btn.textContent = '📈 Upscale Video';
+  } catch(err) { alert('Error: ' + err.message); }
+  btn.disabled = false; btn.textContent = '📈 Upscale Video';
 }
 
-// ══ DEAD SPACE REMOVER ══
+// ══ DEAD SPACE ══
 const deadspaceZone = document.getElementById('deadspaceZone');
 deadspaceZone.addEventListener('dragover', e => { e.preventDefault(); deadspaceZone.classList.add('drag'); });
 deadspaceZone.addEventListener('dragleave', () => deadspaceZone.classList.remove('drag'));
@@ -1082,6 +1952,7 @@ deadspaceZone.addEventListener('drop', e => { e.preventDefault(); deadspaceZone.
 document.getElementById('deadspaceInput').addEventListener('change', () => { if (document.getElementById('deadspaceInput').files[0]) loadDeadspace(document.getElementById('deadspaceInput').files[0]); });
 function loadDeadspace(f) { document.getElementById('deadspaceFnm').textContent = '📎 ' + f.name; deadspaceZone.classList.add('has-file'); document.getElementById('dsBtn').disabled = false; const vid = document.getElementById('dsVid'); vid.src = URL.createObjectURL(f); vid.style.display = 'block'; }
 function updateDbVal() { document.getElementById('dbVal').textContent = document.getElementById('dbSlider').value; }
+
 async function startDeadspace() {
   const fileInput = document.getElementById('deadspaceInput');
   if (!fileInput.files[0]) { alert('Please upload a video first.'); return; }
@@ -1089,23 +1960,22 @@ async function startDeadspace() {
   btn.disabled = true; btn.textContent = '⏳ Processing…';
   try {
     const fd = new FormData();
-    fd.append('video', fileInput.files[0]);
-    fd.append('dbThreshold', document.getElementById('dbSlider').value);
+    fd.append('video', fileInput.files[0]); fd.append('dbThreshold', document.getElementById('dbSlider').value);
     const res = await fetch('/remove-deadspace', { method: 'POST', body: fd });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Processing failed');
-    const vid = document.getElementById('dsVid');
-    vid.src = data.videoUrl; vid.style.display = 'block';
+    document.getElementById('dsVid').src = data.videoUrl;
+    document.getElementById('dsVid').style.display = 'block';
     document.getElementById('dsEmpty').style.display = 'none';
     document.getElementById('dsDlBtn').href = data.videoUrl;
     document.getElementById('dsDlWrap').style.display = 'block';
-  } catch(err) {
-    alert('Error: ' + err.message);
-  }
+  } catch(err) { alert('Error: ' + err.message); }
   btn.disabled = false; btn.textContent = '🎬 Remove Dead Space';
 }
 
-// ══ YT SCRAPER ══
+// ══ SCRAPER ══
+let lastScrapedVideos = [];
+
 async function startScrape() {
   const url = document.getElementById('ytChannelUrl').value.trim();
   if (!url) { alert('Please enter a channel URL.'); return; }
@@ -1117,21 +1987,44 @@ async function startScrape() {
     const res = await fetch('/scrape-channel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channelUrl: url,
-        count: document.getElementById('ytCount').value,
-        sort: document.getElementById('ytSort').value,
-      })
+      body: JSON.stringify({ channelUrl: url, count: document.getElementById('ytCount').value, sort: document.getElementById('ytSort').value })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Scrape failed');
+    lastScrapedVideos = data.videos;
     renderScrapedVideos(data.videos);
+    document.getElementById('exportJsonBtn').style.display = 'block';
   } catch(err) {
     document.getElementById('scrapErr').classList.add('vis');
     document.getElementById('scrapErrMsg').textContent = err.message;
     document.getElementById('scrapList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No data yet</div>';
   }
   btn.disabled = false; btn.textContent = '🎥 Scrape Channel';
+}
+
+function exportScrapedJson() {
+  if (!lastScrapedVideos.length) return;
+  const blob = new Blob([JSON.stringify(lastScrapedVideos, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const handle = document.getElementById('ytChannelUrl').value.split('/').pop().replace('@','') || 'channel';
+  a.download = `channel_${handle}.json`;
+  a.click();
+}
+
+function renderScrapedVideos(videos) {
+  const list = document.getElementById('scrapList');
+  if (!videos || videos.length === 0) { list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tdim);font-size:11px;">No videos found</div>'; return; }
+  list.innerHTML = videos.map(v => `
+    <div style="padding:8px;border-bottom:1px solid var(--bd);display:flex;gap:8px;align-items:flex-start;">
+      <img src="${v.thumbnail}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0;" onerror="this.style.display='none'">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.title}</div>
+        <div style="font-size:10px;color:var(--tdim);">${(v.view_count||0).toLocaleString()} views · ${v.duration_human}</div>
+        <a href="${v.url}" target="_blank" style="font-size:9px;color:var(--yd);text-decoration:none;">↗ Open</a>
+      </div>
+    </div>
+  `).join('');
 }
 
 // ══ REPURPOSE ══
@@ -1147,18 +2040,22 @@ function startRepurpose() {
 document.getElementById('repTiktok').addEventListener('change', () => { document.getElementById('tiktokConnect').style.display = document.getElementById('repTiktok').checked ? 'block' : 'none'; });
 document.getElementById('repInstagram').addEventListener('change', () => { document.getElementById('instagramConnect').style.display = document.getElementById('repInstagram').checked ? 'block' : 'none'; });
 
-// Slider helpers
-function updateSpeedVal()     { document.getElementById('speedVal').textContent      = document.getElementById('speedSlider').value; }
-function updateStabilityVal() { document.getElementById('stabilityVal').textContent  = document.getElementById('stabilitySlider').value + '%'; }
-function updateSimilarityVal(){ document.getElementById('similarityVal').textContent = document.getElementById('similaritySlider').value + '%'; }
-function updateExagVal()      { document.getElementById('exagVal').textContent       = document.getElementById('exagSlider').value; }
-function updateCharCount() { const n = document.getElementById('voiceScript').value.length; const el = document.getElementById('charCount'); el.textContent = n; el.style.color = n > 9000 ? 'var(--red)' : n > 7000 ? 'var(--yd)' : 'var(--tmut)'; }
+// ══ SLIDERS ══
+function updateSpeedVal() { document.getElementById('speedVal').textContent = document.getElementById('speedSlider').value; }
+function updateStabilityVal() { document.getElementById('stabilityVal').textContent = document.getElementById('stabilitySlider').value + '%'; }
+function updateSimilarityVal() { document.getElementById('similarityVal').textContent = document.getElementById('similaritySlider').value + '%'; }
+function updateExagVal() { document.getElementById('exagVal').textContent = document.getElementById('exagSlider').value; }
+function updateCharCount() {
+  const n = document.getElementById('voiceScript').value.length;
+  const el = document.getElementById('charCount');
+  el.textContent = n;
+  el.style.color = n > 9000 ? 'var(--red)' : n > 7000 ? 'var(--yd)' : 'var(--tmut)';
+}
 
 // ══ INIT ══
 onModelChange();
 updateCreditsDisplay();
 onImgModelChange();
-// Init voice gen
 selectedVoiceId = null;
 selectedVoiceName = null;
 renderVoiceDropdown();
